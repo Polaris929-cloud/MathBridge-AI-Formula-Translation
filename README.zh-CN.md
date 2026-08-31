@@ -4,6 +4,8 @@
 
 把 AI 生成的 LaTeX 公式**原样粘贴进 Word / WPS**，保持原生可编辑公式格式，不再是乱码。
 
+**[🚀 在线使用](https://polaris929-cloud.github.io/MathBridge-AI-Formula-Translation/)**
+
 ## 为什么需要它
 
 让 ChatGPT / Claude / DeepSeek 写数学内容时，它们输出的是 LaTeX 源码（如 `$E = mc^2$`）。直接复制粘贴到 Word 里，得到的要么是带反斜杠的源码文本，要么是被硬生生拍扁的乱码。
