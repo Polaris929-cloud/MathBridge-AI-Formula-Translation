@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MathBridge comparison</title>
+<link rel="stylesheet" href="../assets/vendor/temml.css">
+<script src="../assets/vendor/temml.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #f5f7fa;
+    width: 1200px;
+    padding: 28px 32px 24px;
+  }
+  .wrap { display: flex; gap: 24px; align-items: stretch; }
+  .card {
+    flex: 1;
+    border-radius: 14px;
+    padding: 22px 26px 26px;
+    position: relative;
+  }
+  .card.before {
+    background: #fff5f5;
+    border: 1.5px solid #f3c2c2;
+  }
+  .card.after {
+    background: #f2fbf6;
+    border: 1.5px solid #b8e4c9;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  .before .badge { background: #fde2e2; color: #b42318; }
+  .after .badge { background: #d6f3e2; color: #12805c; }
+  .sub {
+    font-size: 13px;
+    color: #8a94a6;
+    margin-bottom: 18px;
+  }
+  .doc {
+    background: #ffffff;
+    border: 1px solid #e3e8ef;
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-size: 19px;
+    line-height: 2.1;
+    color: #1f2937;
+    min-height: 300px;
+    box-shadow: 0 1px 3px rgba(16,24,40,.06);
+  }
+  .code {
+    font-family: Consolas, "Courier New", monospace;
+    color: #d92d20;
+    background: #fff1f0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  math { font-size: 1.12em; }
+  .footer {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 15px;
+    color: #667085;
+  }
+  .footer b { color: #1f2937; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card before">
+    <span class="badge">✕ Before · 直接复制粘贴</span>
+    <div class="sub">Copy AI output straight into Word / 直接把 AI 回复粘进 Word</div>
+    <div class="doc" id="doc-before">
+      The roots of <span class="code">\(ax^2+bx+c=0\)</span> are given by<br>
+      <span class="code">\[x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}\]</span><br>
+      and the Fourier transform<br>
+      <span class="code">\[F(\omega)=\int_{-\infty}^{\infty} f(t)\,e^{-i\omega t}\,dt\]</span>
+    </div>
+  </div>
+  <div class="card after">
+    <span class="badge">✓ After · 用 MathBridge 复制</span>
+    <div class="sub">Copy through MathBridge, then paste / 经 MathBridge 转换后粘贴</div>
+    <div class="doc" id="doc-after">
+      The roots of <span id="f1"></span> are given by<br>
+      <span id="f2" style="display:inline-block; margin:10px 0;"></span><br>
+      and the Fourier transform<br>
+      <span id="f3" style="display:inline-block; margin:10px 0;"></span>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <b>MathBridge</b> — LaTeX → MathML → Word 原生公式（OMML）· paste AI formulas into Word as native equations
+</div>
+<script>
+  document.getElementById('f1').innerHTML =
+    temml.renderToString('ax^2+bx+c=0');
+  document.getElementById('f2').innerHTML =
+    temml.renderToString('x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}', { displayMode: true });
+  document.getElementById('f3').innerHTML =
+    temml.renderToString('F(\\omega)=\\int_{-\\infty}^{\\infty} f(t)\\,e^{-i\\omega t}\\,dt', { displayMode: true });
+</script>
+</body>
+</html>

@@ -6,6 +6,8 @@ Paste AI-generated LaTeX formulas into **Word / WPS as native, editable equation
 
 **[🚀 Live Demo](https://polaris929-cloud.github.io/MathBridge-AI-Formula-Translation/)**
 
+![Before vs after: raw LaTeX code vs native Word equation](assets/demo-comparison.png)
+
 ## Why it exists
 
 When ChatGPT / Claude / DeepSeek writes math, the output is LaTeX source like `$E = mc^2$`. Copy-pasting that into Word gives you either raw backslash-laden source text or flattened garbage.
