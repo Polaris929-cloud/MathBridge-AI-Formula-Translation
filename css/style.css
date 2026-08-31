@@ -11,8 +11,13 @@
   --accent-wash: #e1f5ee;
   --danger: #a32d2d;
   --danger-wash: #fcebeb;
-  --radius: 10px;
-  --radius-lg: 14px;
+  /* 界面自定义变量（由 js/app.js 中的设置面板驱动） */
+  --font-scale: 1;
+  --text-weight: 400;
+  --radius-base: 10px;
+  --pane-min-h: 400px;
+  --radius: var(--radius-base);
+  --radius-lg: calc(var(--radius-base) + 4px);
   --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
 }
 
@@ -24,7 +29,8 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--ink);
-  font-size: 15px;
+  font-size: calc(15px * var(--font-scale));
+  font-weight: var(--text-weight);
   line-height: 1.6;
   min-height: 100dvh;
   display: flex;
@@ -105,7 +111,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  min-height: 380px;
+  min-height: var(--pane-min-h);
 }
 
 .pane-head {
@@ -167,12 +173,13 @@ body {
 textarea#input {
   flex: 1;
   width: 100%;
-  min-height: 280px;
+  min-height: calc(var(--pane-min-h) - 120px);
   padding: 16px 18px;
   border: none;
   resize: none;
   font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
+  font-weight: var(--text-weight);
   line-height: 1.7;
   color: var(--ink);
   background: transparent;
@@ -196,7 +203,8 @@ textarea#input:focus-visible { outline: none; }
   flex: 1;
   padding: 18px 20px;
   overflow: auto;
-  min-height: 280px;
+  min-height: calc(var(--pane-min-h) - 120px);
+  font-weight: var(--text-weight);
 }
 
 .preview .empty {
@@ -288,4 +296,130 @@ textarea#input:focus-visible { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .btn, .math-block, .toast, .gh-link { transition: none; }
+}
+
+/* ---------- 设置面板 / Settings panel ---------- */
+
+.settings-wrap { position: relative; }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.icon-btn svg { display: block; }
+
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 300px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 28px rgba(28, 28, 26, 0.14);
+  padding: 16px 18px 14px;
+  z-index: 50;
+}
+
+.settings-panel h3 {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+
+.setting-row:first-of-type { border-top: none; padding-top: 0; }
+
+.setting-row > label {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.setting-control input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 18px;
+  margin: 0;
+}
+
+.set-val {
+  min-width: 46px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.setting-control select {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 5px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.swatches { display: flex; align-items: center; gap: 8px; }
+
+.swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.swatch:hover { transform: scale(1.12); }
+
+.swatch.active {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+}
+
+input[type="color"]#set-bgcolor {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  cursor: pointer;
+  padding: 2px;
+}
+
+input[type="color"]#set-bgcolor::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]#set-bgcolor::-webkit-color-swatch { border-radius: 999px; border: none; }
+
+.setting-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .settings-panel { position: fixed; top: 64px; right: 16px; left: 16px; width: auto; }
 }

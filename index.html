@@ -21,6 +21,65 @@
       </div>
     </div>
     <div class="header-actions">
+      <div class="settings-wrap">
+        <button type="button" id="btn-settings" class="btn ghost icon-btn" aria-haspopup="true" aria-expanded="false" aria-label="Settings / 界面设置" title="Settings / 界面设置">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor" aria-hidden="true">
+            <path d="M10 6.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm0 5.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/>
+            <path d="M8.7 1.5a1.3 1.3 0 0 0-1.28 1.04l-.3 1.5a6.8 6.8 0 0 0-1.2.7l-1.46-.5a1.3 1.3 0 0 0-1.55.58l-1.3 2.26a1.3 1.3 0 0 0 .28 1.62l1.13 1.03a7 7 0 0 0 0 1.4l-1.13 1.03a1.3 1.3 0 0 0-.28 1.62l1.3 2.26a1.3 1.3 0 0 0 1.55.58l1.46-.5c.38.27.78.5 1.2.7l.3 1.5A1.3 1.3 0 0 0 8.7 18.5h2.6a1.3 1.3 0 0 0 1.28-1.04l.3-1.5c.42-.2.82-.43 1.2-.7l1.46.5a1.3 1.3 0 0 0 1.55-.58l1.3-2.26a1.3 1.3 0 0 0-.28-1.62l-1.13-1.03a7 7 0 0 0 0-1.4l1.13-1.03a1.3 1.3 0 0 0 .28-1.62l-1.3-2.26a1.3 1.3 0 0 0-1.55-.58l-1.46.5a6.8 6.8 0 0 0-1.2-.7l-.3-1.5A1.3 1.3 0 0 0 11.3 1.5H8.7Zm0 1.5h2.6l.36 1.83c.05.24.21.44.43.55.52.25 1 .57 1.43.95.18.16.42.22.65.14l1.78-.61 1.3 2.26-1.38 1.25a.7.7 0 0 0-.22.63c.05.34.05.68 0 1.01a.7.7 0 0 0 .22.63l1.38 1.26-1.3 2.26-1.78-.61a.7.7 0 0 0-.65.14c-.44.38-.91.7-1.43.95a.7.7 0 0 0-.43.55l-.36 1.82H8.7l-.36-1.82a.7.7 0 0 0-.43-.55 5.3 5.3 0 0 1-1.43-.95.7.7 0 0 0-.65-.14l-1.78.61-1.3-2.26 1.38-1.26a.7.7 0 0 0 .22-.63 5.6 5.6 0 0 0 0-1 .7.7 0 0 0-.22-.64L3.18 6.87l1.3-2.26 1.78.61c.23.08.47.02.65-.14.44-.38.91-.7 1.43-.95a.7.7 0 0 0 .43-.55L8.7 3Z"/>
+          </svg>
+        </button>
+        <div id="settings-panel" class="settings-panel" hidden>
+          <h3 data-i18n="settingsTitle">界面设置</h3>
+          <div class="setting-row">
+            <label for="set-fontsize" data-i18n="fontSize">字体大小</label>
+            <div class="setting-control">
+              <input type="range" id="set-fontsize" min="80" max="160" step="5">
+              <span id="val-fontsize" class="set-val">100%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="set-fontweight" data-i18n="fontWeight">字体粗细</label>
+            <div class="setting-control">
+              <select id="set-fontweight">
+                <option value="300">Light 300</option>
+                <option value="400">Regular 400</option>
+                <option value="500">Medium 500</option>
+                <option value="600">Semibold 600</option>
+                <option value="700">Bold 700</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label data-i18n="bgColor">背景颜色</label>
+            <div class="setting-control swatches">
+              <button type="button" class="swatch" data-bg="#faf9f5" style="background:#faf9f5" title="Cream"></button>
+              <button type="button" class="swatch" data-bg="#ffffff" style="background:#ffffff" title="White"></button>
+              <button type="button" class="swatch" data-bg="#eef4fb" style="background:#eef4fb" title="Blue"></button>
+              <button type="button" class="swatch" data-bg="#eef7ef" style="background:#eef7ef" title="Green"></button>
+              <button type="button" class="swatch" data-bg="#f8eef6" style="background:#f8eef6" title="Pink"></button>
+              <button type="button" class="swatch" data-bg="#f0efec" style="background:#f0efec" title="Gray"></button>
+              <input type="color" id="set-bgcolor" value="#faf9f5" data-i18n-title="customColor" title="自定义颜色">
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="set-paneheight" data-i18n="paneSize">文本框高度</label>
+            <div class="setting-control">
+              <input type="range" id="set-paneheight" min="280" max="680" step="20">
+              <span id="val-paneheight" class="set-val">400px</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="set-radius" data-i18n="cornerRadius">圆角</label>
+            <div class="setting-control">
+              <input type="range" id="set-radius" min="0" max="20" step="1">
+              <span id="val-radius" class="set-val">10px</span>
+            </div>
+          </div>
+          <div class="setting-actions">
+            <button type="button" id="btn-reset-settings" class="btn ghost" data-i18n="resetSettings">恢复默认</button>
+          </div>
+        </div>
+      </div>
       <button type="button" id="btn-lang" class="btn ghost lang-toggle" aria-label="Switch language / 切换语言">EN</button>
       <a class="gh-link" href="https://github.com/Polaris929-cloud/MathBridge-AI-Formula-Translation" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">

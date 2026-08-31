@@ -39,6 +39,15 @@
       copiedOne: '公式已复制',
       copyFail: '复制失败，请重试',
       copyBlocked: '复制被浏览器拦截，请点击页面任意处后重试',
+      settingsBtn: '界面设置',
+      settingsTitle: '界面设置',
+      fontSize: '字体大小',
+      fontWeight: '字体粗细',
+      bgColor: '背景颜色',
+      customColor: '自定义颜色',
+      paneSize: '文本框高度',
+      cornerRadius: '圆角',
+      resetSettings: '恢复默认',
       demo: '质能方程 $E = mc^2$ 揭示了质量与能量的等价关系。\n\n' +
         '而最美的公式当属欧拉公式：\n\n$$e^{i\\pi} + 1 = 0$$\n\n' +
         '求解二次方程 $ax^2 + bx + c = 0$ 时，求根公式为：\n\n' +
@@ -69,6 +78,15 @@
       copiedOne: 'Formula copied',
       copyFail: 'Copy failed, please try again',
       copyBlocked: 'Clipboard blocked by browser — click anywhere on the page and retry',
+      settingsBtn: 'Settings',
+      settingsTitle: 'Appearance',
+      fontSize: 'Font size',
+      fontWeight: 'Font weight',
+      bgColor: 'Background color',
+      customColor: 'Custom color',
+      paneSize: 'Panel height',
+      cornerRadius: 'Corner radius',
+      resetSettings: 'Reset to defaults',
       demo: 'The mass-energy equivalence $E = mc^2$ reveals that mass and energy are interchangeable.\n\n' +
         'But the most beautiful formula is Euler\'s identity:\n\n$$e^{i\\pi} + 1 = 0$$\n\n' +
         'For a quadratic equation $ax^2 + bx + c = 0$, the root formula is:\n\n' +
@@ -99,6 +117,11 @@
     document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
       el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
     });
+    document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+      el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+    });
+    btnSettings.setAttribute('title', t('settingsBtn'));
+    btnSettings.setAttribute('aria-label', t('settingsBtn'));
     renderPreview();
   }
 
@@ -107,6 +130,146 @@
     try { localStorage.setItem('mathbridge-lang', lang); } catch (e) { /* ignore */ }
     applyLang();
   });
+
+  /* ---------- 界面自定义 / Appearance settings ---------- */
+  var APPEARANCE_KEY = 'mathbridge-appearance';
+  var APPEARANCE_DEFAULTS = { fs: 100, fw: 400, bg: '#faf9f5', paneH: 400, radius: 10 };
+
+  var btnSettings = document.getElementById('btn-settings');
+  var settingsPanel = document.getElementById('settings-panel');
+  var setFontsize = document.getElementById('set-fontsize');
+  var setFontweight = document.getElementById('set-fontweight');
+  var setBgcolor = document.getElementById('set-bgcolor');
+  var setPaneheight = document.getElementById('set-paneheight');
+  var setRadius = document.getElementById('set-radius');
+  var valFontsize = document.getElementById('val-fontsize');
+  var valPaneheight = document.getElementById('val-paneheight');
+  var valRadius = document.getElementById('val-radius');
+  var btnResetSettings = document.getElementById('btn-reset-settings');
+
+  function loadAppearance() {
+    var state = {};
+    try {
+      var raw = localStorage.getItem(APPEARANCE_KEY);
+      if (raw) state = JSON.parse(raw) || {};
+    } catch (e) { /* localStorage 不可用时用默认值 */ }
+    return {
+      fs: clampNum(state.fs, 80, 160, APPEARANCE_DEFAULTS.fs),
+      fw: clampNum(state.fw, 300, 700, APPEARANCE_DEFAULTS.fw),
+      bg: validColor(state.bg) ? state.bg : APPEARANCE_DEFAULTS.bg,
+      paneH: clampNum(state.paneH, 280, 680, APPEARANCE_DEFAULTS.paneH),
+      radius: clampNum(state.radius, 0, 20, APPEARANCE_DEFAULTS.radius)
+    };
+  }
+
+  function clampNum(v, min, max, fallback) {
+    var n = Number(v);
+    return isFinite(n) && n >= min && n <= max ? n : fallback;
+  }
+
+  function validColor(c) {
+    return typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+  }
+
+  var appearance = loadAppearance();
+
+  function applyAppearance() {
+    var root = document.documentElement.style;
+    root.setProperty('--font-scale', String(appearance.fs / 100));
+    root.setProperty('--text-weight', String(appearance.fw));
+    root.setProperty('--bg', appearance.bg);
+    root.setProperty('--pane-min-h', appearance.paneH + 'px');
+    root.setProperty('--radius-base', appearance.radius + 'px');
+
+    // 同步控件显示
+    setFontsize.value = appearance.fs;
+    valFontsize.textContent = appearance.fs + '%';
+    setFontweight.value = String(appearance.fw);
+    setBgcolor.value = appearance.bg;
+    setPaneheight.value = appearance.paneH;
+    valPaneheight.textContent = appearance.paneH + 'px';
+    setRadius.value = appearance.radius;
+    valRadius.textContent = appearance.radius + 'px';
+    settingsPanel.querySelectorAll('.swatch').forEach(function (s) {
+      s.classList.toggle('active', s.getAttribute('data-bg').toLowerCase() === appearance.bg.toLowerCase());
+    });
+  }
+
+  function saveAppearance() {
+    try { localStorage.setItem(APPEARANCE_KEY, JSON.stringify(appearance)); } catch (e) { /* ignore */ }
+  }
+
+  function updateAppearance(patch) {
+    for (var k in patch) appearance[k] = patch[k];
+    applyAppearance();
+    saveAppearance();
+  }
+
+  btnSettings.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var willOpen = settingsPanel.hidden;
+    settingsPanel.hidden = !willOpen;
+    btnSettings.setAttribute('aria-expanded', String(willOpen));
+  });
+
+  settingsPanel.addEventListener('click', function (e) { e.stopPropagation(); });
+
+  document.addEventListener('click', function () {
+    if (!settingsPanel.hidden) {
+      settingsPanel.hidden = true;
+      btnSettings.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !settingsPanel.hidden) {
+      settingsPanel.hidden = true;
+      btnSettings.setAttribute('aria-expanded', 'false');
+      btnSettings.focus();
+    }
+  });
+
+  setFontsize.addEventListener('input', function () {
+    updateAppearance({ fs: Number(this.value) });
+  });
+
+  setFontweight.addEventListener('change', function () {
+    updateAppearance({ fw: Number(this.value) });
+  });
+
+  setBgcolor.addEventListener('input', function () {
+    updateAppearance({ bg: this.value });
+  });
+
+  setPaneheight.addEventListener('input', function () {
+    updateAppearance({ paneH: Number(this.value) });
+  });
+
+  setRadius.addEventListener('input', function () {
+    updateAppearance({ radius: Number(this.value) });
+  });
+
+  settingsPanel.querySelectorAll('.swatch').forEach(function (s) {
+    s.addEventListener('click', function () {
+      updateAppearance({ bg: s.getAttribute('data-bg') });
+    });
+  });
+
+  btnResetSettings.addEventListener('click', function () {
+    appearance = loadAppearanceDefaults();
+    applyAppearance();
+    saveAppearance();
+  });
+
+  function loadAppearanceDefaults() {
+    return {
+      fs: APPEARANCE_DEFAULTS.fs,
+      fw: APPEARANCE_DEFAULTS.fw,
+      bg: APPEARANCE_DEFAULTS.bg,
+      paneH: APPEARANCE_DEFAULTS.paneH,
+      radius: APPEARANCE_DEFAULTS.radius
+    };
+  }
 
   /* ---------- 公式识别 ---------- */
   // 依次匹配：$$...$$  \[...\]  \(...\)  $...$
@@ -323,5 +486,10 @@
   });
 
   // 初始化
+  applyAppearance();
   applyLang();
+  if (location.hash === '#settings') {
+    settingsPanel.hidden = false;
+    btnSettings.setAttribute('aria-expanded', 'true');
+  }
 })();

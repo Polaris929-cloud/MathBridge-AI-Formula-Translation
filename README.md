@@ -36,6 +36,7 @@ Click any **single formula block** in the preview to copy just that formula.
 - **Mixed parsing** — auto-detects `$...$` inline and `$$...$$` / `\[...\]` display formulas, mixed with regular text
 - **Fault tolerant** — a formula that fails to parse is highlighted in red without blocking the rest
 - **Bilingual UI** — Chinese / English toggle, remembered via localStorage
+- **Customizable appearance** — font size, font weight, background color, panel height and corner radius, all persisted locally
 - **No framework** — vanilla HTML/CSS/JS in a flat directory, easy to hack on
 
 ## Paste support matrix
