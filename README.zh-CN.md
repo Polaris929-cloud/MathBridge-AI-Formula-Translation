@@ -8,6 +8,10 @@
 
 ![对比：直接粘贴得到乱码源码 vs MathBridge 转换后的 Word 原生公式](assets/demo-comparison.png)
 
+智能识别实拍——从 AI 聊天框复制的纯文本（左）被还原为紧凑排版、上下结构的公式（右）：
+
+![智能识别：Unicode 纯文本 vs 还原后的公式](assets/demo-smart.png)
+
 ## 为什么需要它
 
 让 ChatGPT / Claude / DeepSeek 写数学内容时，它们输出的是 LaTeX 源码（如 `$E = mc^2$`）。直接复制粘贴到 Word 里，得到的要么是带反斜杠的源码文本，要么是被硬生生拍扁的乱码。
@@ -34,6 +38,9 @@ AI 输出的 LaTeX  →  MathML  →  系统剪贴板(text/html)  →  Word 粘�
 - **零上传**：全部转换在浏览器本地完成，公式内容不经过任何服务器
 - **零依赖部署**：纯静态文件，Temml 引擎已内置在 `assets/vendor/`，可离线使用
 - **混合解析**：自动识别 `$...$` 行内公式与 `$$...$$`、`\[...\]` 独立公式，正文与公式混排无缝处理
+- **Unicode 智能识别**：从 AI 聊天框直接复制的纯文本也能自动还原——软换行合并、Unicode 符号与上下标还原、被压平的分数重建（如 `4.20.30` 还原为上下结构分数）
+- **富文本粘贴**：剪贴板 HTML 含 KaTeX MathML 时（DeepSeek、Kimi、ChatGPT 等），直接提取原始 LaTeX 源码，零损失转换
+- **紧凑排版**：行内公式与正文同段落，粘贴后与 AI 回复原文版式一致
 - **容错**：单条公式解析失败时标红提示，不影响其余部分复制
 - **中英双语界面**：右上角一键切换，语言偏好本地记忆
 - **界面自定义**：字体大小、字体粗细、背景颜色、文本框高度与圆角均可调节，偏好本地记忆
@@ -66,30 +73,36 @@ npx serve .
 
 ```bash
 node tests/engine.test.mjs
+node tests/smartmath.test.mjs
 ```
 
-验证 Temml 引擎能把示例公式转换为合法 MathML（5/5 通过）。
+验证 Temml 引擎能把示例公式转换为合法 MathML（5/5 通过），并用真实 AI 复制文本验证 SmartMath 引擎——换行合并、符号还原、分数重建、误报防护（23/23 通过）。
 
 ## 项目结构
 
 ```
 mathbridge/
-├── index.html              # 页面入口
-├── css/style.css           # 样式
-├── js/app.js               # 解析 / 渲染 / 剪贴板 / i18n 逻辑
-├── tests/engine.test.mjs   # 引擎单元测试
+├── index.html                 # 页面入口
+├── css/style.css              # 样式
+├── js/app.js                  # 解析 / 渲染 / 剪贴板 / i18n 逻辑
+├── js/smartmath.js            # SmartMath：Unicode 公式智能识别引擎
+├── tests/engine.test.mjs      # Temml 引擎单元测试
+├── tests/smartmath.test.mjs   # SmartMath 单元测试（真实 AI 复制文本）
 ├── assets/vendor/
-│   ├── temml.js            # Temml 0.13.5 (LaTeX → MathML)
-│   └── temml.css           # 数学字体样式
-├── README.md               # English
-├── README.zh-CN.md         # 简体中文
+│   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
+│   └── temml.css              # 数学字体样式
+├── assets/favicon.svg         # 站点图标
+├── assets/demo-comparison.png # README 配图
+├── assets/demo-smart.png      # README 配图
+├── README.md                  # English
+├── README.zh-CN.md            # 简体中文
 └── LICENSE
 ```
 
 ## Roadmap
 
+- [x] Unicode 数学符号（∀、≥、∑）智能识别 —— v0.2.0 已发布（SmartMath）
 - [ ] Word 公式 → LaTeX 反向转换（OMML 解析）
-- [ ] Unicode 数学符号（∀、≥、∑）智能识别
 - [ ] 浏览器插件：在 AI 聊天页面公式块上一键「复制为 Word 公式」
 - [ ] 独立 npm 包：`latex-to-clipboard` 核心引擎，供其他编辑器集成
 - [ ] 更多界面语言

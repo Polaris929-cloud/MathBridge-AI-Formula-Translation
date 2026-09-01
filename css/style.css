@@ -239,6 +239,13 @@ textarea#input:focus-visible { outline: none; }
 
 .math-inline:hover { background: var(--accent-wash); }
 
+/* 智能识别结果：橙色虚线提示「请核对」 */
+.math-inline.smart { outline: 1px dashed #d99a2b; outline-offset: 2px; }
+
+.math-block.smart { border-style: dashed; border-color: #d99a2b; }
+
+.math-block.smart:hover { border-color: #b57d17; background: #fdf6e9; }
+
 .math-error {
   margin: 12px 0;
   padding: 10px 14px;
