@@ -57,15 +57,27 @@ check('分数A：4.20.30 → \\frac{4.2}{0.30}', allTex.includes('\\frac{4.2}{0.
 check('分数B：1/I → \\frac{1}{I}', allTex.includes('\\frac{1}{I}'));
 check('分数B：1/l → \\frac{1}{l}', allTex.includes('\\frac{1}{l}'));
 check('分数C：πd24 → \\frac{\\pi d^{2}}{4}', allTex.includes('\\frac{\\pi d^{2}}{4}'));
-check('分数C：…)24 → \\frac{…)^{2}}{4}', allTex.includes('(2.00\\times 10-4)^{2}}{4}'));
+check('分数C：…)24 → \\frac{…)^{2}}{4}', allTex.includes('(2.00\\times 10^{-4})^{2}}{4}'));
 
 /* --- 符号还原 --- */
 check('符号：∞ → \\infty', allTex.includes('l=\\infty'));
-check('符号：× → \\times', allTex.includes('2.00\\times 10-4'));
+check('符号：× → \\times', allTex.includes('2.00\\times 10^{-4}'));
 check('符号：−(U+2212) → -', allTex.includes('r=14-(0.20+4.8)'));
 check('符号：≈ → \\approx', allTex.includes('b\\approx 75.5'));
 check('符号：Ω → \\Omega', allTex.includes('14\\Omega'));
-check('中文下标：R总 → R_{\\text{总}}', allTex.includes('R_{\\text{总}}=EI'));
+check('中文下标：R总 → R_{总}（Temml 不支持 \\text）', allTex.includes('R_{总}=EI'));
+
+/* --- 上下标还原 --- */
+check('上标：负指数 A−1· → A^{-1}{\\cdot}', allTex.includes('A^{-1}{\\cdot}cm'));
+check('上标：科学计数法 10−4 → 10^{-4}', allTex.includes('10^{-4}'));
+check('上标：科学计数法 10−8 → 10^{-8}', allTex.includes('10^{-8}'));
+check('上标：面积单位 m2 → m^{2}', allTex.includes('10^{-8}m^{2}'));
+check('点乘紧凑：· → {\\cdot}（消除二元运算符间距）', allTex.includes('{\\cdot}') && !allTex.includes('\\cdot '));
+check('不误伤：二元减号 y=x-1 保持不变', (function () {
+  var s = SmartMath.detect('y=x-1');
+  return s.length === 1 && s[0].type === 'math' && s[0].tex === 'y=x-1';
+})(), JSON.stringify(SmartMath.detect('y=x-1')));
+check('不误伤：14-(0.20+4.8) 减号不变上标', allTex.includes('r=14-(0.20+4.8)=9\\Omega'));
 
 /* --- 文本保留（回归：公式之间的文字不得丢失） --- */
 const allText = segs.filter(s => s.type === 'text').map(s => s.text).join('');

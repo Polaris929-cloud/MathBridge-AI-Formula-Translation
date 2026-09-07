@@ -2,7 +2,7 @@
  *
  * 解决「从 AI 聊天界面复制公式」时常见的三类损伤：
  *  1) 公式与文字被聊天 UI 拆成多行      → mergeSoftLines 软换行合并
- *  2) 渲染后的 Unicode 符号/上下标丢失  → unicodeToLatex 符号与上下标还原
+ *  2) 渲染后的 Unicode 符号/上下标丢失  → unicodeToLatex 符号还原 + fixScripts 上下标还原
  *  3) 分数被压平成「分子分母直接拼接」  → 分数重建启发式（4.20.30 → \frac{4.2}{0.30}）
  *
  * 纯函数、零依赖，浏览器与 Node 均可运行（UMD 风格导出）。
@@ -80,7 +80,7 @@
   /* ==================== 2. Unicode → LaTeX ==================== */
 
   var SYMBOL_MAP = {
-    '×': '\\times ', '⋅': '\\cdot ', '·': '\\cdot ',
+    '×': '\\times ', '⋅': '{\\cdot}', '·': '{\\cdot}',
     '−': '-', '±': '\\pm ', '≈': '\\approx ', '≠': '\\ne ',
     '≤': '\\le ', '≥': '\\ge ', '≡': '\\equiv ', '∝': '\\propto ',
     '∞': '\\infty ', '√': '\\sqrt ', '°': '^\\circ ',
@@ -133,11 +133,28 @@
     s = s.replace(SUB_RUN_RE, function (run) { return '_{' + expandScript(run, SUB_MAP) + '}'; });
     /* 数学符号 → LaTeX 命令 */
     s = s.replace(SYMBOL_RE, function (ch) { return SYMBOL_MAP[ch]; });
-    /* 中文下标：拉丁字母后紧跟单个汉字（如 R总）→ R_{\text{总}} */
-    s = s.replace(/([A-Za-z])([\u4e00-\u9fff])/g, function (_, a, b) {
-      return a + '_{\\text{' + b + '}}';
+    /* 中文下标：拉丁字母后紧跟汉字（如 R总）→ R_{总}
+     * 注意：Temml 不支持 \text 命令，CJK 直接放进 _{...} 即可（输出 mtext） */
+    s = s.replace(/([A-Za-z])([\u4e00-\u9fff]+)/g, function (_, a, b) {
+      return a + '_{' + b + '}';
     });
     return s;
+  }
+
+  /* ==================== 2.5 上下标还原启发式 ==================== */
+  /* 渲染后的上标复制成纯文本时被压平成普通字符，按常见模式还原：
+   *   A) 科学计数法：×10−4、10−8  → 10^{-4}、10^{-8}
+   *   B) 负指数单位：A−1·cm       → A^{-1}{\cdot}cm（仅当后跟乘号，避免误伤 y=x-1）
+   *   C) 面积/体积单位：cm2、m3   → cm^{2}、m^{3}
+   */
+  function fixScripts(tex) {
+    /* A) 科学计数法（10 前面不能是数字或小数点，避免误伤 110-4、1.10-4） */
+    tex = tex.replace(/(?<![\d.])10-(\d+)/g, '10^{-$1}');
+    /* B) 字母/右括号 + 负指数，且后面紧跟乘号点 */
+    tex = tex.replace(/([A-Za-z)])(-\d+)(?=\s*\{\\cdot\})/g, '$1^{$2}');
+    /* C) 单位平方/立方（长单位优先匹配） */
+    tex = tex.replace(/\b(mm|cm|dm|km|m|s)([23])\b/g, '$1^{$2}');
+    return tex;
   }
 
   /* ==================== 3. 分数重建启发式 ==================== */
@@ -221,7 +238,7 @@
     function flushMath(run) {
       if (!run) return;
       if (hasSignal(run)) {
-        var tex = fixFractions(unicodeToLatex(run.trim()));
+        var tex = fixFractions(fixScripts(unicodeToLatex(run.trim())));
         segments.push({ type: 'math', tex: tex });
       } else {
         pushText(run);
@@ -262,6 +279,7 @@
   return {
     mergeSoftLines: mergeSoftLines,
     unicodeToLatex: unicodeToLatex,
+    fixScripts: fixScripts,
     fixFractions: fixFractions,
     detect: detect
   };
