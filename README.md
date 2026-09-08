@@ -39,6 +39,7 @@ Click any **single formula block** in the preview to copy just that formula.
 - **Zero-dependency deploy** — pure static files, Temml engine bundled in `assets/vendor/`, works fully offline
 - **Mixed parsing** — auto-detects `$...$` inline and `$$...$$` / `\[...\]` display formulas, mixed with regular text
 - **Smart Unicode detection** — plain text copied from AI chats is reconstructed automatically: soft line-breaks merged, Unicode symbols & super/subscripts restored, flattened fractions rebuilt (e.g. `4.20.30` becomes a proper fraction)
+- **Bare-LaTeX detection** — AI often outputs formulas as raw LaTeX *without* `$...$` delimiters (e.g. `R_{\text{总}} = \frac{E}{I}`). These are recognized via balanced-brace parsing and rendered intact, never split into garbled fragments — so `\frac`, `\text`, `\infty` and superscripts like `10^{-4}` come through correctly.
 - **Rich paste** — when the clipboard HTML contains KaTeX MathML (DeepSeek, Kimi, ChatGPT…), the original LaTeX source is extracted for zero-loss conversion
 - **Compact layout** — inline formulas stay in the same paragraph as the surrounding text, matching the original AI reply
 - **Fault tolerant** — a formula that fails to parse is highlighted in red without blocking the rest
@@ -76,7 +77,7 @@ node tests/engine.test.mjs
 node tests/smartmath.test.mjs
 ```
 
-Verifies the Temml engine converts sample formulas to valid MathML (5/5 passing), and the SmartMath engine against real AI-copied text — line merging, symbol restoration, fraction reconstruction, false-positive guards (23/23 passing).
+Verifies the Temml engine converts sample formulas to valid MathML (5/5), the SmartMath engine against real AI-copied text — line merging, symbol restoration, fraction reconstruction, false-positive guards (30/30), and bare-LaTeX recognition with clean Temml rendering (12/12).
 
 ## Project structure
 
@@ -87,7 +88,8 @@ mathbridge/
 ├── js/app.js                  # parsing / rendering / clipboard logic
 ├── js/smartmath.js            # SmartMath: Unicode formula detection engine
 ├── tests/engine.test.mjs      # Temml engine unit tests
-├── tests/smartmath.test.mjs   # SmartMath unit tests (real AI-copied text)
+├── tests/smartmath.test.mjs   # SmartMath Unicode/merge tests
+├── tests/latex.test.mjs       # Bare-LaTeX recognition tests
 ├── assets/vendor/
 │   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
 │   └── temml.css              # math font styles

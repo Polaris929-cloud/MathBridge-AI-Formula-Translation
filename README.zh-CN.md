@@ -39,6 +39,7 @@ AI 输出的 LaTeX  →  MathML  →  系统剪贴板(text/html)  →  Word 粘�
 - **零依赖部署**：纯静态文件，Temml 引擎已内置在 `assets/vendor/`，可离线使用
 - **混合解析**：自动识别 `$...$` 行内公式与 `$$...$$`、`\[...\]` 独立公式，正文与公式混排无缝处理
 - **Unicode 智能识别**：从 AI 聊天框直接复制的纯文本也能自动还原——软换行合并、Unicode 符号与上下标还原、被压平的分数重建（如 `4.20.30` 还原为上下结构分数）
+- **裸 LaTeX 识别**：AI 常输出没有 `$` 定界符的 LaTeX 源码（如 `R_{\text{总}} = \frac{E}{I}`）。通过花括号配平识别后整段渲染，绝不逐字符劈碎——`\frac`、`\text`、`\infty` 及 `10^{-4}` 这类上标都能正确还原，不再出现源码乱码。
 - **富文本粘贴**：剪贴板 HTML 含 KaTeX MathML 时（DeepSeek、Kimi、ChatGPT 等），直接提取原始 LaTeX 源码，零损失转换
 - **紧凑排版**：行内公式与正文同段落，粘贴后与 AI 回复原文版式一致
 - **容错**：单条公式解析失败时标红提示，不影响其余部分复制
@@ -76,7 +77,7 @@ node tests/engine.test.mjs
 node tests/smartmath.test.mjs
 ```
 
-验证 Temml 引擎能把示例公式转换为合法 MathML（5/5 通过），并用真实 AI 复制文本验证 SmartMath 引擎——换行合并、符号还原、分数重建、误报防护（23/23 通过）。
+验证 Temml 引擎能把示例公式转换为合法 MathML（5/5 通过）；用真实 AI 复制文本验证 SmartMath 引擎（换行合并、符号还原、分数重建、误报防护，30/30 通过）；并用裸 LaTeX 识别回归测试确认含 `\frac`/`\text` 的公式可被干净渲染（12/12 通过）。
 
 ## 项目结构
 
@@ -87,7 +88,8 @@ mathbridge/
 ├── js/app.js                  # 解析 / 渲染 / 剪贴板 / i18n 逻辑
 ├── js/smartmath.js            # SmartMath：Unicode 公式智能识别引擎
 ├── tests/engine.test.mjs      # Temml 引擎单元测试
-├── tests/smartmath.test.mjs   # SmartMath 单元测试（真实 AI 复制文本）
+├── tests/smartmath.test.mjs   # SmartMath Unicode/换行合并测试
+├── tests/latex.test.mjs       # 裸 LaTeX 识别测试
 ├── assets/vendor/
 │   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
 │   └── temml.css              # 数学字体样式

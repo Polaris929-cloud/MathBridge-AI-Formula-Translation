@@ -134,7 +134,7 @@
     /* 数学符号 → LaTeX 命令 */
     s = s.replace(SYMBOL_RE, function (ch) { return SYMBOL_MAP[ch]; });
     /* 中文下标：拉丁字母后紧跟汉字（如 R总）→ R_{总}
-     * 注意：Temml 不支持 \text 命令，CJK 直接放进 _{...} 即可（输出 mtext） */
+     * CJK 直接放进 _{...} 即可（Temml 会输出 <mtext>，作为正常下标渲染） */
     s = s.replace(/([A-Za-z])([\u4e00-\u9fff]+)/g, function (_, a, b) {
       return a + '_{' + b + '}';
     });
@@ -187,6 +187,158 @@
     return tex.split('=').map(fixFractionsInToken).join('=');
   }
 
+  /* ==================== 4.5 裸 LaTeX 识别 ==================== */
+  /* 用户常从 AI 复制到「没有 $ 定界符的 LaTeX 源码」，
+   * 例如  R_{\text{总}} = \frac{E}{I} = \frac{4.2}{0.30} = 14 \, \Omega
+   * 这类文本含 \frac / \text / \infty / \, 等命令，必须整段交给渲染引擎，
+   * 绝不能像 Unicode 纯文本那样逐字符切割（否则 \frac 会被劈成 \f r a c，产生乱码）。
+   *
+   * hasBareLatex(): 判断文本里是否含「强 LaTeX 命令信号」。
+   * splitBareLatex(): 把混排文本切分为 text / latex(math) 两段。
+   *   - 花括号配平 + 反斜杠转义感知，保证 \text{总} 这类带 CJK 的组不被截断
+   *   - 遇 CJK 正文（花括号外）即截断，避免误吞中文说明文字
+   */
+
+  /* 一见到这些命令就视为进入 LaTeX 数学上下文 */
+  var STRONG_LATEX_RE = /\\(?:frac|dfrac|tfrac|text|mathrm|textup|operatorname|sqrt|infty|Omega|times|approx|cdot|left|right|pi|sum|int|prod|lim|pm|mp|ge|le|ne|to|rightarrow|leq|geq|neq|times|div|cdot|ldots|cdots|overrightarrow|vec|frac)\b/;
+  /* 命令首字符后的标识符范围 */
+  var TEX_ID = /[A-Za-z@]/;
+
+  /**
+   * 判断字符串中是否存在「裸 LaTeX 命令」。
+   */
+  function hasBareLatex(s) {
+    return STRONG_LATEX_RE.test(s);
+  }
+
+  /**
+   * 用花括号配平扫描：自「{」下标 from 起，返回越过最后匹配「}」之后的下标。
+   * 处理 \{ \} 转义。未配平则返回 s.length（让渲染器报错提示用户）。
+   */
+  function scanBalanced(s, from) {
+    var depth = 0;
+    var i = from;
+    for (; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === '\\') { i++; continue; }        /* 跳过转义字符及下一个 */
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) return i + 1;
+      }
+    }
+    return s.length;
+  }
+
+  /* 数学 run 中的字符判定（这些字符可安全地在数学与文字边界外连续）。
+   * CJK 与中文句读会中断一个数学 run——除 LaTeX 花括号内(\text{总})的 CJK。 */
+  var MATH_RUN_TERMINATOR = /[，。；：！？、（）【】《》「」『』“”‘’…\u4e00-\u9fff]/;
+  /* 这些字符属于一个数学表达式的延续 */
+  var MATH_RUN_CHARS = /[A-Za-z0-9.=\-+(),/|<>^_{}~*'":;\\\s]/;
+  /* 数字或数学符号开头的子串、紧跟等号/运算符 → 属于数学表达式 */
+  var MATH_START_HINT = /^[A-Za-z0-9\\.,=+\-()]+(?:\s*=|\s*\\frac|\s*\(|\s*[0-9])/;
+
+  /**
+   * 判断一个字符是否应被并入「数学上下文」（非 CJK、非中文标点）。
+   */
+  function isMathRunChar(ch) {
+    if (!ch) return false;
+    if (MATH_RUN_TERMINATOR.test(ch)) return false;
+    return MATH_RUN_CHARS.test(ch);
+  }
+
+  /**
+   * 自 idx 向后吞并连续数学字符，直到遇到 CJK / 中文句读 或 行尾。
+   * 期间若遇到 \command{ 做配平吸收。返回吞并后的末尾下标（不含被截断点）。
+   */
+  function eatMathRun(s, idx) {
+    var n = s.length;
+    var j = idx;
+    while (j < n) {
+      var c = s.charAt(j);
+      if (MATH_RUN_TERMINATOR.test(c)) break;         /* 中文/句读 → 停 */
+      if (c === '\\' && j + 1 < n && TEX_ID.test(s.charAt(j + 1))) {
+        /* 反斜杠命令：读出名字，若后跟 { 则配平吸收整组 */
+        var k = j + 1;
+        while (k < n && TEX_ID.test(s.charAt(k))) k++;
+        if (k < n && s.charAt(k) === '{') {
+          var endB = scanBalanced(s, k);              /* 从 { 开始配平 */
+          j = endB;
+          continue;
+        }
+        j = k;
+        continue;
+      }
+      if (isMathRunChar(c)) { j++; continue; }
+      break;
+    }
+    return j;
+  }
+
+  /**
+   * 自 idx 向前回退，吞并紧邻的数学字符（把 R_{ 这种命令前残片并入）。
+   * 只吞并到安全的边界：不会越过 CJK / 中文句读。
+   */
+  function rewindMathRun(s, idx) {
+    var j = idx;
+    while (j > 0) {
+      var c = s.charAt(j - 1);
+      if (MATH_RUN_TERMINATOR.test(c)) break;
+      if (!isMathRunChar(c)) break;
+      j--;
+    }
+    return j;
+  }
+
+  /**
+   * 把混排文本切分为 text / latex(math) 段。
+   * 核心策略：找到每一个「强 LaTeX 命令」作为锚点，向前回退、向后吞并，
+   * 把整段连续数学表达式收拢为一段 math，避免把 \frac 等劈成碎片。
+   * @returns {Array<{type:'text',text}|{type:'math',tex}>}|null
+   */
+  function splitBareLatex(src) {
+    if (!src || !hasBareLatex(src)) return null;
+    var segments = [];
+    var i = 0;
+    var n = src.length;
+    var textBuf = '';
+    var STRONG_G = new RegExp(STRONG_LATEX_RE.source, 'g');
+
+    function flushText() {
+      if (textBuf) { segments.push({ type: 'text', text: textBuf }); textBuf = ''; }
+    }
+
+    while (i < n) {
+      /* 找下一个强 LaTeX 命令锚点 */
+      STRONG_G.lastIndex = i;
+      var m = STRONG_G.exec(src);
+      if (!m) {
+        textBuf += src.slice(i);
+        break;
+      }
+      var anchor = m.index;
+      /* 锚点前的文字（不含紧邻数学残片）保留 */
+      var rw = rewindMathRun(src, anchor);
+      if (rw > i) { textBuf += src.slice(i, rw); }
+      /* 从回退后的位置开始吞并整个数学 run */
+      var endRun = eatMathRun(src, anchor);
+      /* 若锚点很靠前、run 含等号/公式结构才算一段 */
+      var run = src.slice(rw, endRun).trim();
+      if (run && hasBareLatex(run)) {
+        flushText();
+        segments.push({ type: 'math', tex: run });
+        i = endRun;
+        continue;
+      }
+      /* 该锚点未形成有效公式（罕见），当作文字继续 */
+      textBuf += src.slice(i, anchor + 1);
+      i = anchor + 1;
+    }
+    flushText();
+    if (!segments.some(function (s) { return s.type === 'math'; })) return null;
+    return segments;
+  }
+
   /* ==================== 4. 公式片段识别 ==================== */
   /* 在纯文本中扫描「数学片段」：由数学字符（含汉字下标）构成、
    * 且含有数学信号（等号、运算符、数字-字母邻接、斜线分数等）的连续片段。
@@ -222,7 +374,26 @@
    * @returns {Array<{type:'text',text:string}|{type:'math',tex:string}>}
    */
   function detect(text) {
-    var segments = [];
+    /* 先检查「裸 LaTeX」：若命中，按花括号配平切出 math 段（原文直达渲染），
+     * 剩余纯文本递归交给下方 Unicode 识别，避免逐字符劈碎 LaTeX 命令。 */
+    var latexPieces = splitBareLatex(text);
+    if (latexPieces) {
+      var segs = [];
+      latexPieces.forEach(function (p) {
+        if (p.type === 'math') {
+          segs.push({ type: 'math', tex: p.tex.trim() });
+        } else {
+          detectInto(p.text, segs);
+        }
+      });
+      return segs;
+    }
+    var out = [];
+    detectInto(text, out);
+    return out;
+  }
+
+  function detectInto(text, segments) {
     var runStart = -1;
     var textStart = 0;
 
@@ -272,8 +443,6 @@
     }
     if (runStart >= 0) flushMath(text.slice(runStart));
     else pushText(text.slice(textStart));
-
-    return segments;
   }
 
   return {
@@ -281,6 +450,8 @@
     unicodeToLatex: unicodeToLatex,
     fixScripts: fixScripts,
     fixFractions: fixFractions,
+    hasBareLatex: hasBareLatex,
+    splitBareLatex: splitBareLatex,
     detect: detect
   };
 });
