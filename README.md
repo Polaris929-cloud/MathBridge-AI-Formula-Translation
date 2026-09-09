@@ -30,6 +30,7 @@ What lands in Word is a **real equation object** — double-click to edit, flows
 2. Paste the AI reply into the left input box
 3. The right pane renders a live preview
 4. Click **Copy to Word** (or Ctrl + Enter), then Ctrl + V in Word / WPS
+5. Or click **Export Word** to download a `文档.docx` with native equations — open it in Word / WPS (more reliable CJK-subscript rendering in WPS)
 
 Click any **single formula block** in the preview to copy just that formula.
 
@@ -43,6 +44,7 @@ Click any **single formula block** in the preview to copy just that formula.
 - **Rich paste** — when the clipboard HTML contains KaTeX MathML (DeepSeek, Kimi, ChatGPT…), the original LaTeX source is extracted for zero-loss conversion
 - **Compact layout** — inline formulas stay in the same paragraph as the surrounding text, matching the original AI reply
 - **Fault tolerant** — a formula that fails to parse is highlighted in red without blocking the rest
+- **Export Word** — one-click `文档.docx` with equations embedded as native OMML; Word and WPS both open them as editable native equations (CJK subscripts like `R_总` stay correctly small, sized by WPS's own engine)
 - **Bilingual UI** — Chinese / English toggle, remembered via localStorage
 - **Customizable appearance** — font size, font weight, background color, panel height and corner radius, all persisted locally
 - **No framework** — vanilla HTML/CSS/JS in a flat directory, easy to hack on

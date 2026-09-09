@@ -16,6 +16,7 @@
   var preview = document.getElementById('preview');
   var statusEl = document.getElementById('status');
   var btnCopy = document.getElementById('btn-copy');
+  var btnExport = document.getElementById('btn-export');
   var btnDemo = document.getElementById('btn-demo');
   var btnClear = document.getElementById('btn-clear');
   var btnLang = document.getElementById('btn-lang');
@@ -33,6 +34,9 @@
       inputPlaceholder: '把 AI 聊天框里的回复直接粘贴到这里。\n\n支持 $...$ 行内公式、$$...$$ 与 \\[...\\] 独立公式；\n从 AI 界面复制的纯文本（Unicode 符号、被压平的分数）也能自动识别。',
       previewTitle: '实时预览',
       copyBtn: '复制到 Word',
+      exportBtn: '导出 Word',
+      exportedOk: '已生成「文档.docx」，用 Word / WPS 打开即为原生可编辑公式',
+      exportNone: '先粘贴内容再导出',
       hint: 'Ctrl + Enter 快速复制 · 点击公式可单独复制 · 橙色虚线框为智能识别结果，如有偏差可在左侧直接修改',
       footer: '原理：LaTeX → MathML → 剪贴板，Word / WPS 粘贴时自动转为原生公式（OMML）。全程在浏览器本地完成，公式内容不上传任何服务器。',
       empty: '左边粘贴 AI 输出，这里会实时显示渲染效果',
@@ -79,6 +83,9 @@
       inputPlaceholder: 'Paste any AI chat reply here.\n\nSupports $...$ inline formulas, $$...$$ and \\[...\\] display formulas.\nPlain Unicode text copied from AI chats (with flattened fractions) is auto-detected too.',
       previewTitle: 'Live preview',
       copyBtn: 'Copy to Word',
+      exportBtn: 'Export Word',
+      exportedOk: '「文档.docx」ready — open it in Word / WPS as native editable equations',
+      exportNone: 'Paste some content first, then export',
       hint: 'Ctrl + Enter to copy · Click a formula to copy it alone · Orange dashed boxes are auto-detected — edit on the left if needed',
       footer: 'How it works: LaTeX → MathML → clipboard. Word / WPS converts it to a native equation (OMML) on paste. Everything runs locally in your browser — nothing is uploaded.',
       empty: 'Paste AI output on the left — the rendered result appears here',
@@ -440,6 +447,7 @@
       statusEl.textContent = '';
       statusEl.className = 'status';
       btnCopy.disabled = true;
+      btnExport.disabled = true;
       return;
     }
 
@@ -509,6 +517,7 @@
       statusEl.textContent = t('noFormula');
       statusEl.className = 'status';
       btnCopy.disabled = false;
+      btnExport.disabled = false;
       return;
     }
 
@@ -519,6 +528,7 @@
     statusEl.textContent = msg;
     statusEl.className = errorCount > 0 ? 'status err' : 'status ok';
     btnCopy.disabled = false;
+    btnExport.disabled = false;
   }
 
   /* ---------- 复制（段落流：行内公式与文字同段落，保持原文紧凑排版） ---------- */
@@ -647,6 +657,30 @@
   });
 
   btnCopy.addEventListener('click', copyWhole);
+
+  /* ---------- 导出 Word（生成含原生 OMML 公式的 docx，Word/WPS 均可打开） ---------- */
+  function exportDocx() {
+    var src = input.value;
+    if (!src.trim()) { showToast(t('exportNone')); return; }
+    if (!window.DocxBuilder) { showToast('Export unavailable'); return; }
+    try {
+      var segments = parseSegments(src);
+      var blob = window.DocxBuilder.buildDocx(segments);
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = '文档.docx'; /* 按要求固定命名为「文档」 */
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      showToast(t('exportedOk'));
+    } catch (err) {
+      showToast(t('copyFail') + ' (export)');
+    }
+  }
+
+  btnExport.addEventListener('click', exportDocx);
 
   input.addEventListener('input', renderPreview);
 

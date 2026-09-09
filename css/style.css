@@ -144,6 +144,11 @@ body {
 
 .btn:active { transform: scale(0.97); }
 
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .btn.ghost {
