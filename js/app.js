@@ -413,8 +413,16 @@
   }
 
   /* ---------- MathML 渲染 ---------- */
+  /* Word/WPS 从 text/html 剪贴板导入公式时，靠 <math> 是否携带 MathML 命名空间
+   * 来决定是否走 MathML → OMML 转换。Temml 输出的 <math> 默认不带 xmlns，
+   * 若不补上，Word 常把它当普通内联文本粘贴：下标不缩小、间距被拉大（乱码感）。
+   * 因此在渲染层统一补上命名空间，让 Word 可靠地转成原生公式。 */
   function renderMathml(tex, displayMode) {
-    return temml.renderToString(tex, { displayMode: displayMode, throwOnError: false });
+    var mathml = temml.renderToString(tex, { displayMode: displayMode, throwOnError: false });
+    if (mathml && mathml.indexOf('<math') === 0 && mathml.indexOf('xmlns') === -1) {
+      mathml = mathml.replace('<math>', '<math xmlns="http://www.w3.org/1998/Math/MathML">');
+    }
+    return mathml;
   }
 
   /* ---------- HTML 转义 ---------- */
