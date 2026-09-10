@@ -67,6 +67,11 @@ try {
   built = sandbox.DocxBuilder.buildUint8([
     { type: 'text', text: '由最后一组数据可得电路总电阻为：' },
     { type: 'math', tex: 'R_{总} = \\frac{E}{I} = \\frac{4.2}{0.30} = 14 \\, \\Omega', displayMode: true, smart: true },
+    { type: 'text', text: '其中电流' },
+    { type: 'math', tex: 'I = 0.30 \\, \\text{A}', displayMode: false, smart: true },
+    { type: 'text', text: '，电阻丝横截面积为' },
+    { type: 'math', tex: 'S = 3.14 \\times 10^{-8}', displayMode: false, smart: true },
+    { type: 'text', text: '。' },
   ]);
 } catch (e) { buildErr = e.message; }
 
@@ -79,11 +84,18 @@ ck('端到端产物是合法 zip（PK 头 + EOCD）',
  * 且块级公式必须包在 <w:p> 内 —— 裸 <m:oMathPara> 会让 Word 直接拒开文件
  * （用户实测「导出后公式全消失」的根因），也不允许出现顺序敏感的 <m:scr>。 */
 const asLatin1 = built ? Array.from(built, (c) => String.fromCharCode(c)).join('') : '';
+const displayCount = (asLatin1.match(/<m:oMathPara>/g) || []).length;
+const inlineCount = (asLatin1.match(/<m:oMath>/g) || []).length - displayCount;
 ck('docx 内含原生 OMML（m:oMath / m:sSub）',
   asLatin1.includes('<m:oMathPara>') && asLatin1.includes('<m:oMath>') && asLatin1.includes('m:sSub'));
 ck('块级公式全部包在 <w:p> 内（Word 兼容性关键）',
-  asLatin1.includes('<w:p><m:oMathPara>') && !asLatin1.includes('</w:p><m:oMathPara>'));
+  displayCount > 0 &&
+  (asLatin1.match(/<\/w:pPr><m:oMathPara>/g) || []).length === displayCount &&
+  (asLatin1.match(/<\/m:oMathPara><\/w:p>/g) || []).length === displayCount);
 ck('m:rPr 不含 <m:scr>（schema 顺序敏感且冗余）', !asLatin1.includes('<m:scr'));
+/* 行内公式必须嵌在文字段落里（紧凑排版），不得自己独占段落 */
+ck('行内公式紧跟文字 run、同段排布', /<\/w:r><m:oMath>/.test(asLatin1));
+ck('行内公式数量正确（不额外占段落）', inlineCount === 2, `display=${displayCount} inline=${inlineCount}`);
 
 /* ---------- 5. app.js 引用的 DOM id 必须在 index.html 里存在 ---------- */
 const appJs = readFileSync(resolve(root, 'js/app.js'), 'utf8');

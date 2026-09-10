@@ -9,12 +9,17 @@ eval(readFileSync(new URL('../assets/vendor/temml.js', import.meta.url), 'utf8')
 globalThis.MathML2OMML = require('../js/mml2omml.js');
 const DocxBuilder = require('../js/docx.js');
 
-/* 模拟 parseSegments 输出（正文 + 公式混排） */
+/* 模拟 parseSegments 输出（正文 + 公式混排；含行内公式） */
 const segments = [
   { type: 'text', text: '由最后一组数据可得电路总电阻为：' },
   { type: 'math', tex: 'R_{总} = \\frac{E}{I} = \\frac{4.2}{0.30} = 14 \\, \\Omega', displayMode: true, smart: true },
   { type: 'text', text: '横截面积：' },
-  { type: 'math', tex: 'S = \\frac{\\pi d^2}{4} = \\frac{3.14 \\times (2.00 \\times 10^{-4})^2}{4} = 3.14 \\times 10^{-8} \\, \\text{m}^2', displayMode: true, smart: true }
+  { type: 'math', tex: 'S = \\frac{\\pi d^2}{4} = \\frac{3.14 \\times (2.00 \\times 10^{-4})^2}{4} = 3.14 \\times 10^{-8} \\, \\text{m}^2', displayMode: true, smart: true },
+  { type: 'text', text: '其中电流表读数' },
+  { type: 'math', tex: 'I = 0.30 \\, \\text{A}', displayMode: false, smart: true },
+  { type: 'text', text: '，电阻丝直径' },
+  { type: 'math', tex: 'd = 2.00 \\times 10^{-4} \\, \\text{m}', displayMode: false, smart: true },
+  { type: 'text', text: '。' }
 ];
 
 const bytes = DocxBuilder.buildUint8(segments);
@@ -42,12 +47,13 @@ const py =
   "for p in z.namelist(): m.parseString(z.read(p))\n" +
   "d=z.read('word/document.xml').decode('utf-8')\n" +
   "total=d.count('<m:oMathPara>')\n" +
-  "wrapped=d.count('<w:p><m:oMathPara>')\n" +
+  "wrapped=d.count('</m:oMathPara></w:p>')\n" +
   "scr=d.count('<m:scr')\n" +
-  "print('python: parts_OK XML_OK oMathPara=', total, 'wrapped=', wrapped, 'scr=', scr, 'sSub=', d.count('<m:sSub>'))\n" +
+  "inline=d.count('<m:oMath>')-total\n" +
+  "print('python: parts_OK XML_OK oMathPara=', total, 'wrapped=', wrapped, 'inline=', inline, 'scr=', scr, 'sSub=', d.count('<m:sSub>'))\n" +
   "# ECMA-376：块级公式必须包在 <w:p> 内，裸 <m:oMathPara> 会被 Word 拒开或剥掉；\n" +
-  "# m:rPr 只写 <m:sty>，不写顺序敏感/冗余的 <m:scr>。\n" +
-  "sys.exit(0 if total>=2 and wrapped==total and scr==0 and d.count('<m:sSub>')>=1 else 1)\n";
+  "# m:rPr 只写 <m:sty>，不写顺序敏感/冗余的 <m:scr>；行内公式应嵌在文字段落里。\n" +
+  "sys.exit(0 if total>=2 and wrapped==total and inline>=2 and scr==0 and d.count('<m:sSub>')>=1 else 1)\n";
 execFileSync('python', ['-c', py], { stdio: 'inherit' });
 unlinkSync(outPath);
 console.log('cleaned temp docx');

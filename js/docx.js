@@ -37,67 +37,74 @@
     return '<w:r><w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>';
   }
 
-  /* 把一个含换行的文本段，转成一组 w:p 段落（连续空行分隔；单换行→<w:br/>） */
-  function textToParas(text) {
-    var paras = [];
-    var cur = [];
-    var lines = String(text).split('\n');
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      if (line === '') {
-        if (cur.length) { paras.push(cur); cur = []; }
-        continue;
+  /* ---------------- docx 部件 ---------------- */
+
+  var TEXT_PPR = '<w:pPr><w:spacing w:after="120" w:line="360" w:lineRule="auto"/>' +
+    '<w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria" w:eastAsia="宋体"/><w:sz w:val="24"/></w:rPr>' +
+    '</w:pPr>';
+  /* 独立公式段落：单倍行距、小段后距，避免公式行与上下文脱开 */
+  var MATH_PPR = '<w:pPr><w:spacing w:before="60" w:after="60" w:line="240" w:lineRule="auto"/></w:pPr>';
+
+  /* LaTeX → OMML 内层（<m:oMath> 的子内容），失败返回 '' */
+  function mathInner(seg) {
+    var mathml, inner = '';
+    try {
+      if (typeof temml !== 'undefined') {
+        mathml = temml.renderToString(seg.tex, { displayMode: true, throwOnError: false });
       }
-      cur.push(textRun(line));
-    }
-    if (cur.length) paras.push(cur);
-    return paras;
+      if (mathml && mathml.indexOf('ParseError') === -1 && ommlModule()) {
+        inner = ommlModule().toOMML(mathml);
+      }
+    } catch (e) { inner = ''; }
+    return inner;
   }
 
-  /* ---------------- docx 部件 ---------------- */
+  /* 段落流组装：文字与「行内公式」同段连续排布（紧凑），
+   * 「独立公式($$…$$)」才独占居中一行。行内/独立由 parseSegments 的 displayMode 决定。 */
   function buildBody(segments) {
     var body = '';
-    var hasTextPara = false;
+    var open = false;
+    function pOpen() { if (!open) { body += '<w:p>' + TEXT_PPR; open = true; } }
+    function pClose() { if (open) { body += '</w:p>'; open = false; } }
 
     segments.forEach(function (seg) {
       if (seg.type === 'text') {
-        var paras = textToParas(seg.text);
-        paras.forEach(function (runs) {
-          body += '<w:p><w:pPr><w:spacing w:after="120" w:line="360" w:lineRule="auto"/>' +
-            '<w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria" w:eastAsia="宋体"/><w:sz w:val="24"/></w:rPr>' +
-            '</w:pPr>' + runs.join('') + '</w:p>';
-          hasTextPara = true;
-        });
+        var lines = String(seg.text).split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line === '') { pClose(); continue; } /* 空行 = 分段 */
+          pOpen();
+          if (i > 0 && open) body += '<w:r><w:br/></w:r>'; /* 段内软换行 */
+          body += textRun(line);
+        }
         return;
       }
-      // 公式段 → 原生 OMML 居中块
-      var mathml, inner = '';
-      try {
-        if (typeof temml !== 'undefined') {
-          mathml = temml.renderToString(seg.tex, { displayMode: true, throwOnError: false });
-        } else {
-          mathml = '';
-        }
-        if (mathml && mathml.indexOf('ParseError') === -1 && ommlModule()) {
-          inner = ommlModule().toOMML(mathml);
-        }
-      } catch (e) { inner = ''; }
+
+      var inner = mathInner(seg);
       if (!inner) {
         // 兜底：渲染失败就按文本输出该公式的 LaTeX，避免内容丢失
-        body += '<w:p><w:pPr><w:spacing w:after="120" w:line="360" w:lineRule="auto"/>' +
-          '<w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria" w:eastAsia="宋体"/><w:sz w:val="24"/></w:rPr>' +
-          '</w:pPr>' + textRun(seg.tex) + '</w:p>';
+        pOpen();
+        body += textRun(seg.tex);
         return;
       }
-      /* ECMA-376：块级公式必须包在 <w:p> 内（w:body 只接受 w:p/w:tbl 等块级元素，
-       * 裸 <m:oMathPara> 会让 Word 报「打开文件时遇到错误」）。 */
-      body += '<w:p><m:oMathPara><m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr>' +
-        '<m:oMath>' + inner + '</m:oMath></m:oMathPara></w:p>';
+      if (seg.displayMode) {
+        /* ECMA-376：块级公式必须包在 <w:p> 内（w:body 只接受 w:p/w:tbl 等块级元素，
+         * 裸 <m:oMathPara> 会让 Word 报「打开文件时遇到错误」）。 */
+        pClose();
+        body += '<w:p>' + MATH_PPR +
+          '<m:oMathPara><m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr>' +
+          '<m:oMath>' + inner + '</m:oMath></m:oMathPara></w:p>';
+      } else {
+        /* 行内公式嵌在当前文字段落里，不换行不居中 —— 这是排版紧凑的关键 */
+        pOpen();
+        body += '<m:oMath>' + inner + '</m:oMath>';
+      }
     });
+    pClose();
 
-    if (!hasTextPara) {
+    if (body === '') {
       // 至少保证 body 非空（Word 允许空 body，这里预防）
-      body = '<w:p><w:pPr/></w:p>' + body;
+      body = '<w:p><w:pPr/></w:p>';
     }
     return body;
   }

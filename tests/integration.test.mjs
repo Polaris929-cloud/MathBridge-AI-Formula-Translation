@@ -51,8 +51,9 @@ console.log('docx bytes:', bytes.length);
 import { execFileSync } from 'child_process';
 import { unlinkSync } from 'fs';
 // 用 python 校验 zip 后清理临时文件
-// 断言：块级公式全部包在 <w:p> 内（裸 <m:oMathPara> 会被 Word 拒开）、无 <m:scr>
-const py = "import zipfile,xml.dom.minidom as m,sys\nz=zipfile.ZipFile('tools/_demo_docx.docx')\nfor p in z.namelist(): m.parseString(z.read(p))\nd=z.read('word/document.xml').decode('utf-8')\ntotal=d.count('<m:oMathPara>')\nwrapped=d.count('<w:p><m:oMathPara>')\nsys.exit(0 if total>=4 and wrapped==total and d.count('<m:scr')==0 and d.count('<m:rad>')>=1 else 1)\n";
+// 断言：块级公式全部包在 <w:p> 内（裸 <m:oMathPara> 会被 Word 拒开）、无 <m:scr>；
+// 智能识别的行内公式应嵌在文字段落里（oMath 总数明显多于 oMathPara）
+const py = "import zipfile,xml.dom.minidom as m,sys\nz=zipfile.ZipFile('tools/_demo_docx.docx')\nfor p in z.namelist(): m.parseString(z.read(p))\nd=z.read('word/document.xml').decode('utf-8')\ntotal=d.count('<m:oMathPara>')\nwrapped=d.count('</m:oMathPara></w:p>')\nomath=d.count('<m:oMath>')\nsys.exit(0 if total>=1 and wrapped==total and omath>=total+2 and d.count('<m:scr')==0 and d.count('<m:rad>')>=1 else 1)\n";
 execFileSync('python', ['-c', py], { stdio: 'inherit' });
 unlinkSync('tools/_demo_docx.docx');
 console.log('cleaned temp docx');
