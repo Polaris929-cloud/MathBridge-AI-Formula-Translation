@@ -89,8 +89,10 @@
           '</w:pPr>' + textRun(seg.tex) + '</w:p>';
         return;
       }
-      body += '<m:oMathPara><m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr>' +
-        '<m:oMath>' + inner + '</m:oMath></m:oMathPara>';
+      /* ECMA-376：块级公式必须包在 <w:p> 内（w:body 只接受 w:p/w:tbl 等块级元素，
+       * 裸 <m:oMathPara> 会让 Word 报「打开文件时遇到错误」）。 */
+      body += '<w:p><m:oMathPara><m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr>' +
+        '<m:oMath>' + inner + '</m:oMath></m:oMathPara></w:p>';
     });
 
     if (!hasTextPara) {

@@ -51,7 +51,8 @@ console.log('docx bytes:', bytes.length);
 import { execFileSync } from 'child_process';
 import { unlinkSync } from 'fs';
 // 用 python 校验 zip 后清理临时文件
-const py = "import zipfile,xml.dom.minidom as m,sys\nz=zipfile.ZipFile('tools/_demo_docx.docx')\nfor p in z.namelist(): m.parseString(z.read(p))\nd=z.read('word/document.xml').decode('utf-8')\nsys.exit(0 if d.count('<m:oMathPara>')>=4 and d.count('<m:rad>')>=1 else 1)\n";
+// 断言：块级公式全部包在 <w:p> 内（裸 <m:oMathPara> 会被 Word 拒开）、无 <m:scr>
+const py = "import zipfile,xml.dom.minidom as m,sys\nz=zipfile.ZipFile('tools/_demo_docx.docx')\nfor p in z.namelist(): m.parseString(z.read(p))\nd=z.read('word/document.xml').decode('utf-8')\ntotal=d.count('<m:oMathPara>')\nwrapped=d.count('<w:p><m:oMathPara>')\nsys.exit(0 if total>=4 and wrapped==total and d.count('<m:scr')==0 and d.count('<m:rad>')>=1 else 1)\n";
 execFileSync('python', ['-c', py], { stdio: 'inherit' });
 unlinkSync('tools/_demo_docx.docx');
 console.log('cleaned temp docx');

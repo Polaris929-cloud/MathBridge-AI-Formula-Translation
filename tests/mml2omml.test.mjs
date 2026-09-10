@@ -37,7 +37,7 @@ const mm3 = temml.renderToString(eqs['EQ3 斜率 上标单位'], { throwOnError:
 const o3 = M2O.toOMML(mm3);
 ck('EQ3 上标 m:sSup=2', (o3.match(/<m:sSup>/g) || []).length === 2, o3);
 ck('EQ3 直立单位 cm/m 以 plain(非斜体) 渲染',
-  /<m:r><m:rPr><m:sty m:val="p"\/><m:scr m:val="roman"\/><\/m:rPr><m:t xml:space="preserve">cm<\/m:t><\/m:r>/.test(o3) &&
+  /<m:r><m:rPr><m:sty m:val="p"\/><\/m:rPr><m:t xml:space="preserve">cm<\/m:t><\/m:r>/.test(o3) &&
   /<m:t xml:space="preserve">m<\/m:t>/.test(o3), o3.slice(0, 300));
 
 const mm4 = temml.renderToString(eqs['EQ4 面积 嵌套上标分数'], { throwOnError: false });

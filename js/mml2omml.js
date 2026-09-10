@@ -32,13 +32,13 @@
       .replace(/&apos;/g, "'").replace(/&amp;/g, '&');
   }
 
-  /* 单个文本 token 转成 OMML run。isPlain=true 表示不斜体（数字/单位/直立文本）。 */
+  /* 单个文本 token 转成 OMML run。isPlain=true 表示不斜体（数字/单位/直立文本）。
+   * 直立样式只写 <m:sty m:val="p"/>（与 Word 自身输出一致，schema 里 m:rPr 子元素
+   * 顺序敏感，多写 m:scr 反而可能触发校验问题）。 */
   function run(char, isPlain) {
     var c = String(char);
     if (!c) return '';
-    var rPr = isPlain
-      ? '<m:rPr><m:sty m:val="p"/><m:scr m:val="roman"/></m:rPr>'
-      : '';
+    var rPr = isPlain ? '<m:rPr><m:sty m:val="p"/></m:rPr>' : '';
     return '<m:r>' + rPr + '<m:t xml:space="preserve">' + esc(c) + '</m:t></m:r>';
   }
 

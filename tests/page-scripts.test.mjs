@@ -75,10 +75,15 @@ ck('端到端产物是合法 zip（PK 头 + EOCD）',
   !!built && built[0] === 0x50 && built[1] === 0x4b && built.length > 500,
   built ? `len=${built.length}` : 'null');
 
-/* docx 内容必须真的含原生 OMML 公式（而不是回退成 LaTeX 纯文本） */
+/* docx 内容必须真的含原生 OMML 公式（而不是回退成 LaTeX 纯文本），
+ * 且块级公式必须包在 <w:p> 内 —— 裸 <m:oMathPara> 会让 Word 直接拒开文件
+ * （用户实测「导出后公式全消失」的根因），也不允许出现顺序敏感的 <m:scr>。 */
 const asLatin1 = built ? Array.from(built, (c) => String.fromCharCode(c)).join('') : '';
 ck('docx 内含原生 OMML（m:oMath / m:sSub）',
   asLatin1.includes('<m:oMathPara>') && asLatin1.includes('<m:oMath>') && asLatin1.includes('m:sSub'));
+ck('块级公式全部包在 <w:p> 内（Word 兼容性关键）',
+  asLatin1.includes('<w:p><m:oMathPara>') && !asLatin1.includes('</w:p><m:oMathPara>'));
+ck('m:rPr 不含 <m:scr>（schema 顺序敏感且冗余）', !asLatin1.includes('<m:scr'));
 
 /* ---------- 5. app.js 引用的 DOM id 必须在 index.html 里存在 ---------- */
 const appJs = readFileSync(resolve(root, 'js/app.js'), 'utf8');

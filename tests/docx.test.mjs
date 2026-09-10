@@ -41,8 +41,13 @@ const py =
   "z=zipfile.ZipFile('" + outPath + "')\n" +
   "for p in z.namelist(): m.parseString(z.read(p))\n" +
   "d=z.read('word/document.xml').decode('utf-8')\n" +
-  "print('python: parts_OK XML_OK oMathPara=', d.count('<m:oMathPara>'), 'sSub=', d.count('<m:sSub>'))\n" +
-  "sys.exit(0 if d.count('<m:oMathPara>')>=2 and d.count('<m:sSub>')>=1 else 1)\n";
+  "total=d.count('<m:oMathPara>')\n" +
+  "wrapped=d.count('<w:p><m:oMathPara>')\n" +
+  "scr=d.count('<m:scr')\n" +
+  "print('python: parts_OK XML_OK oMathPara=', total, 'wrapped=', wrapped, 'scr=', scr, 'sSub=', d.count('<m:sSub>'))\n" +
+  "# ECMA-376：块级公式必须包在 <w:p> 内，裸 <m:oMathPara> 会被 Word 拒开或剥掉；\n" +
+  "# m:rPr 只写 <m:sty>，不写顺序敏感/冗余的 <m:scr>。\n" +
+  "sys.exit(0 if total>=2 and wrapped==total and scr==0 and d.count('<m:sSub>')>=1 else 1)\n";
 execFileSync('python', ['-c', py], { stdio: 'inherit' });
 unlinkSync(outPath);
 console.log('cleaned temp docx');
