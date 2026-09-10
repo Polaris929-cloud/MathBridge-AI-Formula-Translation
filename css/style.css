@@ -130,11 +130,13 @@ body {
   color: var(--ink-soft);
 }
 
-.pane-actions { display: flex; gap: 8px; }
+/* 按钮文案较长（含适用软件说明），窄屏时整组换行而不是把标签折成两截 */
+.pane-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .btn {
   font-family: inherit;
   font-size: 13.5px;
+  white-space: nowrap;
   padding: 7px 16px;
   border-radius: var(--radius);
   border: 1px solid transparent;
