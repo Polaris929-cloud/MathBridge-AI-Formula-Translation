@@ -37,6 +37,7 @@
       exportBtn: '导出 Word',
       exportedOk: '已生成「文档.docx」，用 Word / WPS 打开即为原生可编辑公式',
       exportNone: '先粘贴内容再导出',
+      exportUnavailable: '导出模块未加载，请按 Ctrl+F5 强制刷新后重试',
       hint: 'Ctrl + Enter 快速复制 · 点击公式可单独复制 · 橙色虚线框为智能识别结果，如有偏差可在左侧直接修改',
       footer: '原理：LaTeX → MathML → 剪贴板，Word / WPS 粘贴时自动转为原生公式（OMML）。全程在浏览器本地完成，公式内容不上传任何服务器。',
       empty: '左边粘贴 AI 输出，这里会实时显示渲染效果',
@@ -86,6 +87,7 @@
       exportBtn: 'Export Word',
       exportedOk: '「文档.docx」ready — open it in Word / WPS as native editable equations',
       exportNone: 'Paste some content first, then export',
+      exportUnavailable: 'Export module not loaded — press Ctrl+F5 to hard-refresh, then retry',
       hint: 'Ctrl + Enter to copy · Click a formula to copy it alone · Orange dashed boxes are auto-detected — edit on the left if needed',
       footer: 'How it works: LaTeX → MathML → clipboard. Word / WPS converts it to a native equation (OMML) on paste. Everything runs locally in your browser — nothing is uploaded.',
       empty: 'Paste AI output on the left — the rendered result appears here',
@@ -662,7 +664,12 @@
   function exportDocx() {
     var src = input.value;
     if (!src.trim()) { showToast(t('exportNone')); return; }
-    if (!window.DocxBuilder) { showToast('Export unavailable'); return; }
+    if (!window.DocxBuilder) {
+      /* 只可能是 js/docx.js 未加载（脚本缺失或缓存旧页面），不会在正常链路出现 */
+      if (window.console && console.error) console.error('[MathBridge] DocxBuilder missing — js/docx.js not loaded?');
+      showToast(t('exportUnavailable'));
+      return;
+    }
     try {
       var segments = parseSegments(src);
       var blob = window.DocxBuilder.buildDocx(segments);

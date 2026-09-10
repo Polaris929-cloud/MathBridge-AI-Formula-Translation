@@ -77,9 +77,17 @@ Then visit `http://localhost:8000`. Double-clicking `index.html` also works.
 ```bash
 node tests/engine.test.mjs
 node tests/smartmath.test.mjs
+node tests/latex.test.mjs
+node tests/mml2omml.test.mjs
+node tests/docx.test.mjs
+node tests/integration.test.mjs
+node tests/page-scripts.test.mjs   # page wiring regression (scripts / DOM ids / i18n keys)
+node tools/browser-e2e.mjs         # real-browser E2E (Edge headless, clicks "Export Word")
 ```
 
 Verifies the Temml engine converts sample formulas to valid MathML (5/5), the SmartMath engine against real AI-copied text — line merging, symbol restoration, fraction reconstruction, false-positive guards (30/30), and bare-LaTeX recognition with clean Temml rendering (12/12).
+
+`page-scripts.test.mjs` and `browser-e2e.mjs` are *wiring-layer* tests: the first loads every `<script>` from `index.html` in its real order inside a VM sandbox and checks that every DOM id and `data-i18n` key referenced by `app.js` actually exists; the second drives the real page in headless Edge (type content → click Export Word) and asserts the toast plus the produced Blob are a valid docx. Together they catch silent failures where unit tests are green but a button does nothing in the browser.
 
 ## Project structure
 
@@ -87,11 +95,18 @@ Verifies the Temml engine converts sample formulas to valid MathML (5/5), the Sm
 mathbridge/
 ├── index.html                 # entry page
 ├── css/style.css              # styles
-├── js/app.js                  # parsing / rendering / clipboard logic
+├── js/app.js                  # parsing / rendering / clipboard / docx export / i18n
 ├── js/smartmath.js            # SmartMath: Unicode formula detection engine
+├── js/mml2omml.js             # MathML → OMML converter (native equations)
+├── js/docx.js                 # zero-dependency in-browser docx packer (STORE zip + OOXML)
 ├── tests/engine.test.mjs      # Temml engine unit tests
 ├── tests/smartmath.test.mjs   # SmartMath Unicode/merge tests
 ├── tests/latex.test.mjs       # Bare-LaTeX recognition tests
+├── tests/mml2omml.test.mjs    # MathML→OMML conversion tests
+├── tests/docx.test.mjs        # docx packer tests
+├── tests/integration.test.mjs # end-to-end export test
+├── tests/page-scripts.test.mjs# page wiring regression tests
+├── tools/browser-e2e.mjs      # headless-Edge browser E2E check
 ├── assets/vendor/
 │   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
 │   └── temml.css              # math font styles

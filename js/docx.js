@@ -12,12 +12,17 @@
  */
 
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.DocxBuilder = factory();
-})(typeof self !== 'undefined' ? self : this, function () {
+  if (typeof module === 'object' && module.exports) module.exports = factory(root);
+  else root.DocxBuilder = factory(root);
+})(typeof self !== 'undefined' ? self : this, function (root) {
   'use strict';
 
-  var OMML = (typeof MathML2OMML !== 'undefined') ? MathML2OMML : null;
+  /* 惰性解析全局 MathML2OMML：避免因 <script> 顺序变动导致加载期为 undefined */
+  function ommlModule() {
+    if (typeof MathML2OMML !== 'undefined' && MathML2OMML) return MathML2OMML;
+    if (typeof root !== 'undefined' && root && root.MathML2OMML) return root.MathML2OMML;
+    return null;
+  }
 
   /* ---------------- XML 工具 ---------------- */
   function esc(s) {
@@ -73,8 +78,8 @@
         } else {
           mathml = '';
         }
-        if (mathml && mathml.indexOf('ParseError') === -1 && OMML) {
-          inner = OMML.toOMML(mathml);
+        if (mathml && mathml.indexOf('ParseError') === -1 && ommlModule()) {
+          inner = ommlModule().toOMML(mathml);
         }
       } catch (e) { inner = ''; }
       if (!inner) {

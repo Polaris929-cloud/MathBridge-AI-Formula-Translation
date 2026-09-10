@@ -77,9 +77,17 @@ npx serve .
 ```bash
 node tests/engine.test.mjs
 node tests/smartmath.test.mjs
+node tests/latex.test.mjs
+node tests/mml2omml.test.mjs
+node tests/docx.test.mjs
+node tests/integration.test.mjs
+node tests/page-scripts.test.mjs   # 页面装配回归（脚本 / DOM id / i18n 键）
+node tools/browser-e2e.mjs         # 真实浏览器端到端（Edge headless，驱动 UI 点导出）
 ```
 
 验证 Temml 引擎能把示例公式转换为合法 MathML（5/5 通过）；用真实 AI 复制文本验证 SmartMath 引擎（换行合并、符号还原、分数重建、误报防护，30/30 通过）；并用裸 LaTeX 识别回归测试确认含 `\frac`/`\text` 的公式可被干净渲染（12/12 通过）。
+
+`page-scripts.test.mjs` 与 `browser-e2e.mjs` 是「装配层」测试：前者按 `index.html` 里 `<script>` 的真实顺序在 VM 沙箱里加载一遍，并校验 `app.js` 引用的每个 DOM id、每个 `data-i18n` 键都存在；后者用 Edge headless 打开页面、填内容、点「导出 Word」，断言 toast 与产出的 Blob 是合法 docx。这两层专门拦截「单测全绿但浏览器里按钮点了没反应」的静默失效。
 
 ## 项目结构
 
@@ -87,11 +95,18 @@ node tests/smartmath.test.mjs
 mathbridge/
 ├── index.html                 # 页面入口
 ├── css/style.css              # 样式
-├── js/app.js                  # 解析 / 渲染 / 剪贴板 / i18n 逻辑
+├── js/app.js                  # 解析 / 渲染 / 剪贴板 / docx 导出 / i18n 逻辑
 ├── js/smartmath.js            # SmartMath：Unicode 公式智能识别引擎
+├── js/mml2omml.js             # MathML → OMML 转换器（原生公式）
+├── js/docx.js                 # 浏览器端零依赖 docx 打包器（STORE zip + OOXML）
 ├── tests/engine.test.mjs      # Temml 引擎单元测试
 ├── tests/smartmath.test.mjs   # SmartMath Unicode/换行合并测试
 ├── tests/latex.test.mjs       # 裸 LaTeX 识别测试
+├── tests/mml2omml.test.mjs    # MathML→OMML 转换测试
+├── tests/docx.test.mjs        # docx 打包器测试
+├── tests/integration.test.mjs # 端到端导出测试
+├── tests/page-scripts.test.mjs# 页面装配回归测试
+├── tools/browser-e2e.mjs      # Edge headless 浏览器端到端校验
 ├── assets/vendor/
 │   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
 │   └── temml.css              # 数学字体样式
