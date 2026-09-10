@@ -58,8 +58,6 @@
       fontWeight: '字体粗细',
       bgColor: '背景颜色',
       customColor: '自定义颜色',
-      paneSize: '文本框高度',
-      cornerRadius: '圆角',
       resetSettings: '恢复默认',
       demo: '质能方程 $E = mc^2$ 揭示了质量与能量的等价关系。\n\n' +
         '而最美的公式当属欧拉公式：\n\n$$e^{i\\pi} + 1 = 0$$\n\n' +
@@ -108,8 +106,6 @@
       fontWeight: 'Font weight',
       bgColor: 'Background color',
       customColor: 'Custom color',
-      paneSize: 'Panel height',
-      cornerRadius: 'Corner radius',
       resetSettings: 'Reset to defaults',
       demo: 'The mass-energy equivalence $E = mc^2$ reveals that mass and energy are interchangeable.\n\n' +
         'But the most beautiful formula is Euler\'s identity:\n\n$$e^{i\\pi} + 1 = 0$$\n\n' +
@@ -158,20 +154,18 @@
     applyLang();
   });
 
-  /* ---------- 界面自定义 / Appearance settings ---------- */
+  /* ---------- 界面自定义 / Appearance settings ----------
+   * 面板高度与圆角已从设置面板移除：它们的取值由 CSS 固定（--pane-h-cap /
+   * --radius-base），且面板高度会随视口自适应，不再由用户调节。 */
   var APPEARANCE_KEY = 'mathbridge-appearance';
-  var APPEARANCE_DEFAULTS = { fs: 100, fw: 400, bg: '#faf9f5', paneH: 560, radius: 10 };
+  var APPEARANCE_DEFAULTS = { fs: 100, fw: 400, bg: '#faf9f5' };
 
   var btnSettings = document.getElementById('btn-settings');
   var settingsPanel = document.getElementById('settings-panel');
   var setFontsize = document.getElementById('set-fontsize');
   var setFontweight = document.getElementById('set-fontweight');
   var setBgcolor = document.getElementById('set-bgcolor');
-  var setPaneheight = document.getElementById('set-paneheight');
-  var setRadius = document.getElementById('set-radius');
   var valFontsize = document.getElementById('val-fontsize');
-  var valPaneheight = document.getElementById('val-paneheight');
-  var valRadius = document.getElementById('val-radius');
   var btnResetSettings = document.getElementById('btn-reset-settings');
 
   function loadAppearance() {
@@ -183,9 +177,7 @@
     return {
       fs: clampNum(state.fs, 80, 160, APPEARANCE_DEFAULTS.fs),
       fw: clampNum(state.fw, 300, 700, APPEARANCE_DEFAULTS.fw),
-      bg: validColor(state.bg) ? state.bg : APPEARANCE_DEFAULTS.bg,
-      paneH: clampNum(state.paneH, 280, 900, APPEARANCE_DEFAULTS.paneH),
-      radius: clampNum(state.radius, 0, 20, APPEARANCE_DEFAULTS.radius)
+      bg: validColor(state.bg) ? state.bg : APPEARANCE_DEFAULTS.bg
     };
   }
 
@@ -205,18 +197,12 @@
     root.setProperty('--font-scale', String(appearance.fs / 100));
     root.setProperty('--text-weight', String(appearance.fw));
     root.setProperty('--bg', appearance.bg);
-    root.setProperty('--pane-h', appearance.paneH + 'px');
-    root.setProperty('--radius-base', appearance.radius + 'px');
 
     // 同步控件显示
     setFontsize.value = appearance.fs;
     valFontsize.textContent = appearance.fs + '%';
     setFontweight.value = String(appearance.fw);
     setBgcolor.value = appearance.bg;
-    setPaneheight.value = appearance.paneH;
-    valPaneheight.textContent = appearance.paneH + 'px';
-    setRadius.value = appearance.radius;
-    valRadius.textContent = appearance.radius + 'px';
     settingsPanel.querySelectorAll('.swatch').forEach(function (s) {
       s.classList.toggle('active', s.getAttribute('data-bg').toLowerCase() === appearance.bg.toLowerCase());
     });
@@ -268,14 +254,6 @@
     updateAppearance({ bg: this.value });
   });
 
-  setPaneheight.addEventListener('input', function () {
-    updateAppearance({ paneH: Number(this.value) });
-  });
-
-  setRadius.addEventListener('input', function () {
-    updateAppearance({ radius: Number(this.value) });
-  });
-
   settingsPanel.querySelectorAll('.swatch').forEach(function (s) {
     s.addEventListener('click', function () {
       updateAppearance({ bg: s.getAttribute('data-bg') });
@@ -292,9 +270,7 @@
     return {
       fs: APPEARANCE_DEFAULTS.fs,
       fw: APPEARANCE_DEFAULTS.fw,
-      bg: APPEARANCE_DEFAULTS.bg,
-      paneH: APPEARANCE_DEFAULTS.paneH,
-      radius: APPEARANCE_DEFAULTS.radius
+      bg: APPEARANCE_DEFAULTS.bg
     };
   }
 

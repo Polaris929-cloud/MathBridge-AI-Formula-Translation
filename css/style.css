@@ -14,8 +14,18 @@
   /* 界面自定义变量（由 js/app.js 中的设置面板驱动） */
   --font-scale: 1;
   --text-weight: 400;
+  /* 圆角与面板高度为固定设计值（原「圆角」「文本框高度」设置项已移除）。
+   * --pane-h-cap 是视口足够高时的面板高度；--pane-h-floor 是收缩下限，
+   * 再矮就交给页面整体滚动，保证任何窗口尺寸下内容都不被裁切。 */
   --radius-base: 10px;
-  --pane-h: 560px;
+  /* 面板高度：视口够高时占满工作区（原「文本框高度」滑块上限 900px 作为封顶，
+   * 避免 4K 竖屏下面板高得离谱），矮窗口则自动收缩到 --pane-h-floor。 */
+  --pane-h-cap: 900px;
+  --pane-h-floor: 300px;
+  /* 面板之外需要占用的垂直空间：实测 header 约 85px + workspace 上下内边距 44px
+   * + 页脚约 48px ≈ 177px，取 180px 留一点余量。
+   * 该值决定面板从 560px 开始收缩的视口高度（≈740px 视口以下）。 */
+  --pane-chrome: 180px;
   --radius: var(--radius-base);
   --radius-lg: calc(var(--radius-base) + 4px);
   --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
@@ -44,6 +54,9 @@ body {
   padding: 18px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  flex: none;
 }
 
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -68,7 +81,7 @@ body {
   color: var(--ink-faint);
 }
 
-.header-actions { display: flex; align-items: center; gap: 10px; }
+.header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto; }
 
 .lang-toggle { min-width: 52px; font-weight: 600; }
 
@@ -102,6 +115,8 @@ body {
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; padding: 16px; }
   .site-header { padding: 14px 16px; }
+  /* 单列时两栏纵向堆叠，各自不再按视口高度算（否则两块加起来必然溢出） */
+  .pane { height: clamp(280px, 60dvh, 480px); }
 }
 
 .pane {
@@ -111,10 +126,12 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  /* 用固定 height 而不是 min-height：网格默认 stretch 会把面板撑到整个视口高度，
-   * min-height 永远够不到（实测面板已 726px > 上限 680px），设置项就失效了。
-   * 固定 height 后「文本框高度」滑块立即可见，内部区域各自滚动。 */
-  height: var(--pane-h);
+  /* 高度固定为设计尺寸，但在矮窗口里自动收缩，避免面板把页脚挤出视口或内容
+   * 被裁切：视口够高时面板占满工作区（上限 900px），更矮则等比收缩到 300px 为止，
+   * 再往下由页面整体滚动兜底。用固定 height 而不是 min-height，是因为网格默认
+   * stretch 会把面板撑到视口高度，min-height 永远够不到。 */
+  height: clamp(var(--pane-h-floor), calc(100dvh - var(--pane-chrome)), var(--pane-h-cap));
+  min-height: 0;
 }
 
 .pane-head {
@@ -123,7 +140,10 @@ body {
   justify-content: space-between;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  gap: 12px;
+  gap: 10px 12px;
+  /* 窄窗口时按钮组整体换到第二行，而不是把标题压扁或让按钮溢出面板 */
+  flex-wrap: wrap;
+  flex: none;
 }
 
 .pane-head h2 {
@@ -131,10 +151,11 @@ body {
   font-size: 14px;
   font-weight: 600;
   color: var(--ink-soft);
+  flex: none;
 }
 
 /* 按钮文案较长（含适用软件说明），窄屏时整组换行而不是把标签折成两截 */
-.pane-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pane-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 
 .btn {
   font-family: inherit;
@@ -183,7 +204,9 @@ body {
 textarea#input {
   flex: 1;
   width: 100%;
-  min-height: calc(var(--pane-h) - 120px);
+  /* min-height:0 让 textarea 能随面板收缩（flex 子项默认 min-height:auto
+   * 会被内容顶开，导致矮窗口下面板溢出） */
+  min-height: 0;
   padding: 16px 18px;
   border: none;
   resize: none;
@@ -204,6 +227,7 @@ textarea#input:focus-visible { outline: none; }
   color: var(--ink-faint);
   border-top: 1px solid var(--border);
   min-height: 34px;
+  flex: none;
 }
 
 .status.ok { color: var(--accent); }
@@ -213,7 +237,7 @@ textarea#input:focus-visible { outline: none; }
   flex: 1;
   padding: 18px 20px;
   overflow: auto;
-  min-height: calc(var(--pane-h) - 120px);
+  min-height: 0;
   font-weight: var(--text-weight);
 }
 
@@ -239,6 +263,9 @@ textarea#input:focus-visible { outline: none; }
   text-align: center;
   cursor: copy;
   transition: border-color 0.15s ease, background 0.15s ease;
+  /* 超长公式在窄面板内横向滚动，而不是撑破面板 */
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .math-block:hover { border-color: var(--accent); background: var(--accent-wash); }
@@ -278,6 +305,7 @@ textarea#input:focus-visible { outline: none; }
   font-size: 12px;
   color: var(--ink-faint);
   border-top: 1px solid var(--border);
+  flex: none;
 }
 
 .site-footer {
@@ -439,4 +467,13 @@ input[type="color"]#set-bgcolor::-webkit-color-swatch { border-radius: 999px; bo
 
 @media (max-width: 900px) {
   .settings-panel { position: fixed; top: 64px; right: 16px; left: 16px; width: auto; }
+}
+
+/* 极窄屏（<480px）：按钮文案比面板还宽，改为整行铺满并允许折行，
+ * 否则「复制公式粘贴到 Word(仅 Microsoft Word)」会溢出面板被裁掉 */
+@media (max-width: 480px) {
+  .btn { font-size: 12.5px; padding: 7px 12px; }
+  .pane-actions { width: 100%; }
+  .pane-actions .btn { flex: 1 1 100%; white-space: normal; text-align: center; }
+  .header-actions { gap: 8px; }
 }

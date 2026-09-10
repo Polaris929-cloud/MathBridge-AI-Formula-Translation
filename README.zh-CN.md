@@ -46,7 +46,7 @@ AI 输出的 LaTeX  →  MathML  →  系统剪贴板(text/html)  →  Word 粘�
 - **容错**：单条公式解析失败时标红提示，不影响其余部分复制
 - **导出 Word**：一键生成 `文档.docx`，公式以原生 OMML 内嵌——Word 与 WPS 打开均为可编辑原生公式，中文下标（如 `R_总`）字号由 WPS 原生引擎保证，稳定缩小
 - **中英双语界面**：右上角一键切换，语言偏好本地记忆
-- **界面自定义**：字体大小、字体粗细、背景颜色、文本框高度与圆角均可调节，偏好本地记忆
+- **界面自定义**：字体大小、字体粗细、背景颜色可调，偏好本地记忆（面板高度与圆角为固定设计值，随窗口自适应）
 - **无框架**：原生 HTML/CSS/JS，单目录结构，方便二次开发
 
 ## 支持情况
@@ -83,11 +83,14 @@ node tests/docx.test.mjs
 node tests/integration.test.mjs
 node tests/page-scripts.test.mjs   # 页面装配回归（脚本 / DOM id / i18n 键）
 node tools/browser-e2e.mjs         # 真实浏览器端到端（Edge headless，驱动 UI 点导出）
+node tools/responsive-check.mjs    # 多视口响应式校验（9 种窗口 + 4 种窄屏 iframe）
 ```
 
 验证 Temml 引擎能把示例公式转换为合法 MathML（5/5 通过）；用真实 AI 复制文本验证 SmartMath 引擎（换行合并、符号还原、分数重建、误报防护，30/30 通过）；并用裸 LaTeX 识别回归测试确认含 `\frac`/`\text` 的公式可被干净渲染（12/12 通过）。
 
 `page-scripts.test.mjs` 与 `browser-e2e.mjs` 是「装配层」测试：前者按 `index.html` 里 `<script>` 的真实顺序在 VM 沙箱里加载一遍，并校验 `app.js` 引用的每个 DOM id、每个 `data-i18n` 键都存在；后者用 Edge headless 打开页面、填内容、点「导出 Word」，断言 toast 与产出的 Blob 是合法 docx。这两层专门拦截「单测全绿但浏览器里按钮点了没反应」的静默失效。
+
+`responsive-check.mjs` 在 9 种窗口尺寸（1600×1000 → 最小窗口 500×800）下真实渲染页面，并额外用 iframe 模拟 430/400/360/320px 窄屏，逐个断言：无横向滚动、文本无裁切、按钮不溢出面板、输入框与预览区始终有可用高度、页脚完整可读。布局类改动（面板高度、断点、按钮文案变长）都应跑它。
 
 ## 项目结构
 
@@ -107,6 +110,7 @@ mathbridge/
 ├── tests/integration.test.mjs # 端到端导出测试
 ├── tests/page-scripts.test.mjs# 页面装配回归测试
 ├── tools/browser-e2e.mjs      # Edge headless 浏览器端到端校验
+├── tools/responsive-check.mjs # 多视口响应式布局校验
 ├── assets/vendor/
 │   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
 │   └── temml.css              # 数学字体样式

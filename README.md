@@ -46,7 +46,7 @@ Click any **single formula block** in the preview to copy just that formula.
 - **Fault tolerant** — a formula that fails to parse is highlighted in red without blocking the rest
 - **Export Word** — one-click `文档.docx` with equations embedded as native OMML; Word and WPS both open them as editable native equations (CJK subscripts like `R_总` stay correctly small, sized by WPS's own engine)
 - **Bilingual UI** — Chinese / English toggle, remembered via localStorage
-- **Customizable appearance** — font size, font weight, background color, panel height and corner radius, all persisted locally
+- **Customizable appearance** — font size, font weight and background color, all persisted locally (panel height and corner radius are fixed design values that adapt to the window)
 - **No framework** — vanilla HTML/CSS/JS in a flat directory, easy to hack on
 
 ## Paste support matrix
@@ -83,11 +83,14 @@ node tests/docx.test.mjs
 node tests/integration.test.mjs
 node tests/page-scripts.test.mjs   # page wiring regression (scripts / DOM ids / i18n keys)
 node tools/browser-e2e.mjs         # real-browser E2E (Edge headless, clicks "Export Word")
+node tools/responsive-check.mjs    # multi-viewport layout check (9 windows + 4 narrow iframes)
 ```
 
 Verifies the Temml engine converts sample formulas to valid MathML (5/5), the SmartMath engine against real AI-copied text — line merging, symbol restoration, fraction reconstruction, false-positive guards (30/30), and bare-LaTeX recognition with clean Temml rendering (12/12).
 
 `page-scripts.test.mjs` and `browser-e2e.mjs` are *wiring-layer* tests: the first loads every `<script>` from `index.html` in its real order inside a VM sandbox and checks that every DOM id and `data-i18n` key referenced by `app.js` actually exists; the second drives the real page in headless Edge (type content → click Export Word) and asserts the toast plus the produced Blob are a valid docx. Together they catch silent failures where unit tests are green but a button does nothing in the browser.
+
+`responsive-check.mjs` renders the page at 9 window sizes (1600×1000 down to the 500×800 minimum window) plus four narrow widths (430/400/360/320px) simulated through same-origin iframes, asserting at each size: no horizontal scrolling, no clipped text, buttons never overflowing their pane, usable input/preview heights, and a fully readable footer. Run it for any layout change (panel height, breakpoints, longer button labels).
 
 ## Project structure
 
@@ -107,6 +110,7 @@ mathbridge/
 ├── tests/integration.test.mjs # end-to-end export test
 ├── tests/page-scripts.test.mjs# page wiring regression tests
 ├── tools/browser-e2e.mjs      # headless-Edge browser E2E check
+├── tools/responsive-check.mjs # multi-viewport layout check
 ├── assets/vendor/
 │   ├── temml.js               # Temml 0.13.5 (LaTeX → MathML)
 │   └── temml.css              # math font styles

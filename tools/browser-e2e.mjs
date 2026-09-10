@@ -65,20 +65,15 @@ const DIAG = String.raw`
     out.blobSize = captured ? captured.size : 0;
     out.blobType = captured ? captured.type : null;
 
-    /* 「文本框高度」设置项必须真的改变面板高度（曾因网格 stretch 把面板撑满视口，
-     * 导致 min-height 永远够不到、滑块看上去完全没用） */
-    var slider = document.getElementById('set-paneheight');
+    /* 「文本框高度」「圆角」已从设置面板移除，改为固定设计值。
+     * 面板高度现在随视口自适应，但仍不得超过 560px 的设计上限。 */
     var pane = document.querySelector('.pane');
-    function paneH() { return Math.round(pane.getBoundingClientRect().height); }
-    out.paneHDefault = paneH();
-    slider.value = slider.max;
-    slider.dispatchEvent(new Event('input', { bubbles: true }));
-    out.paneHMax = paneH();
-    out.paneHTarget = Number(slider.max);
-    slider.value = slider.min;
-    slider.dispatchEvent(new Event('input', { bubbles: true }));
-    out.paneHMin = paneH();
-    out.paneHMinTarget = Number(slider.min);
+    out.paneHeight = Math.round(pane.getBoundingClientRect().height);
+    out.hasPaneHeightControl = !!document.getElementById('set-paneheight');
+    out.hasRadiusControl = !!document.getElementById('set-radius');
+    out.radiusBase = getComputedStyle(document.documentElement)
+      .getPropertyValue('--radius-base').trim();
+    out.paneRadius = getComputedStyle(pane).borderTopLeftRadius;
 
     HTMLAnchorElement.prototype.click = realClick;
     URL.createObjectURL = realCreate;
@@ -97,6 +92,7 @@ let dom = '';
 try {
   dom = execFileSync(EDGE, [
     '--headless=new', '--disable-gpu', '--no-sandbox', '--allow-file-access-from-files',
+    '--window-size=1400,1000',
     '--virtual-time-budget=6000', '--dump-dom', 'file:///' + tmp.replace(/\\/g, '/'),
   ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
 } catch (e) {
@@ -135,12 +131,12 @@ ck('toast 不是英文兜底提示 "Export unavailable"',
   !r.toast || r.toast.indexOf('Export unavailable') === -1, String(r.toast));
 ck('toast 为成功提示（含 文档.docx）',
   typeof r.toast === 'string' && r.toast.indexOf('文档.docx') !== -1, String(r.toast));
-ck('「文本框高度」设置项真的改变面板高度',
-  r.paneHMax > r.paneHDefault && r.paneHDefault > r.paneHMin,
-  `default=${r.paneHDefault} max=${r.paneHMax} min=${r.paneHMin}`);
-ck('面板高度与设定值一致（±10px）',
-  Math.abs(r.paneHMax - r.paneHTarget) <= 10 && Math.abs(r.paneHMin - r.paneHMinTarget) <= 10,
-  `max=${r.paneHMax}/${r.paneHTarget} min=${r.paneHMin}/${r.paneHMinTarget}`);
+ck('「文本框高度」设置项已移除', r.hasPaneHeightControl === false);
+ck('「圆角」设置项已移除', r.hasRadiusControl === false);
+ck('圆角为固定设计值 10px', r.radiusBase === '10px' && r.paneRadius === '14px',
+  `--radius-base=${r.radiusBase} pane=${r.paneRadius}`);
+ck('面板高度落在固定设计区间 300–900px',
+  r.paneHeight >= 300 && r.paneHeight <= 900, String(r.paneHeight));
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
