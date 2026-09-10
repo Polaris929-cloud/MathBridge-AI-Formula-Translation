@@ -65,6 +65,21 @@ const DIAG = String.raw`
     out.blobSize = captured ? captured.size : 0;
     out.blobType = captured ? captured.type : null;
 
+    /* 「文本框高度」设置项必须真的改变面板高度（曾因网格 stretch 把面板撑满视口，
+     * 导致 min-height 永远够不到、滑块看上去完全没用） */
+    var slider = document.getElementById('set-paneheight');
+    var pane = document.querySelector('.pane');
+    function paneH() { return Math.round(pane.getBoundingClientRect().height); }
+    out.paneHDefault = paneH();
+    slider.value = slider.max;
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    out.paneHMax = paneH();
+    out.paneHTarget = Number(slider.max);
+    slider.value = slider.min;
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    out.paneHMin = paneH();
+    out.paneHMinTarget = Number(slider.min);
+
     HTMLAnchorElement.prototype.click = realClick;
     URL.createObjectURL = realCreate;
   } catch (e) {
@@ -120,6 +135,12 @@ ck('toast 不是英文兜底提示 "Export unavailable"',
   !r.toast || r.toast.indexOf('Export unavailable') === -1, String(r.toast));
 ck('toast 为成功提示（含 文档.docx）',
   typeof r.toast === 'string' && r.toast.indexOf('文档.docx') !== -1, String(r.toast));
+ck('「文本框高度」设置项真的改变面板高度',
+  r.paneHMax > r.paneHDefault && r.paneHDefault > r.paneHMin,
+  `default=${r.paneHDefault} max=${r.paneHMax} min=${r.paneHMin}`);
+ck('面板高度与设定值一致（±10px）',
+  Math.abs(r.paneHMax - r.paneHTarget) <= 10 && Math.abs(r.paneHMin - r.paneHMinTarget) <= 10,
+  `max=${r.paneHMax}/${r.paneHTarget} min=${r.paneHMin}/${r.paneHMinTarget}`);
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

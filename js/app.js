@@ -160,7 +160,7 @@
 
   /* ---------- 界面自定义 / Appearance settings ---------- */
   var APPEARANCE_KEY = 'mathbridge-appearance';
-  var APPEARANCE_DEFAULTS = { fs: 100, fw: 400, bg: '#faf9f5', paneH: 400, radius: 10 };
+  var APPEARANCE_DEFAULTS = { fs: 100, fw: 400, bg: '#faf9f5', paneH: 560, radius: 10 };
 
   var btnSettings = document.getElementById('btn-settings');
   var settingsPanel = document.getElementById('settings-panel');
@@ -184,7 +184,7 @@
       fs: clampNum(state.fs, 80, 160, APPEARANCE_DEFAULTS.fs),
       fw: clampNum(state.fw, 300, 700, APPEARANCE_DEFAULTS.fw),
       bg: validColor(state.bg) ? state.bg : APPEARANCE_DEFAULTS.bg,
-      paneH: clampNum(state.paneH, 280, 680, APPEARANCE_DEFAULTS.paneH),
+      paneH: clampNum(state.paneH, 280, 900, APPEARANCE_DEFAULTS.paneH),
       radius: clampNum(state.radius, 0, 20, APPEARANCE_DEFAULTS.radius)
     };
   }
@@ -205,7 +205,7 @@
     root.setProperty('--font-scale', String(appearance.fs / 100));
     root.setProperty('--text-weight', String(appearance.fw));
     root.setProperty('--bg', appearance.bg);
-    root.setProperty('--pane-min-h', appearance.paneH + 'px');
+    root.setProperty('--pane-h', appearance.paneH + 'px');
     root.setProperty('--radius-base', appearance.radius + 'px');
 
     // 同步控件显示

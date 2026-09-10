@@ -15,7 +15,7 @@
   --font-scale: 1;
   --text-weight: 400;
   --radius-base: 10px;
-  --pane-min-h: 400px;
+  --pane-h: 560px;
   --radius: var(--radius-base);
   --radius-lg: calc(var(--radius-base) + 4px);
   --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
@@ -111,7 +111,10 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  min-height: var(--pane-min-h);
+  /* 用固定 height 而不是 min-height：网格默认 stretch 会把面板撑到整个视口高度，
+   * min-height 永远够不到（实测面板已 726px > 上限 680px），设置项就失效了。
+   * 固定 height 后「文本框高度」滑块立即可见，内部区域各自滚动。 */
+  height: var(--pane-h);
 }
 
 .pane-head {
@@ -180,7 +183,7 @@ body {
 textarea#input {
   flex: 1;
   width: 100%;
-  min-height: calc(var(--pane-min-h) - 120px);
+  min-height: calc(var(--pane-h) - 120px);
   padding: 16px 18px;
   border: none;
   resize: none;
@@ -210,7 +213,7 @@ textarea#input:focus-visible { outline: none; }
   flex: 1;
   padding: 18px 20px;
   overflow: auto;
-  min-height: calc(var(--pane-min-h) - 120px);
+  min-height: calc(var(--pane-h) - 120px);
   font-weight: var(--text-weight);
 }
 
